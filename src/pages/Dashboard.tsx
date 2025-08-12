@@ -46,6 +46,7 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold">Your Monthly Plan</h1>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => navigate("/onboarding")}>Edit inputs</Button>
+            <Button variant="secondary" onClick={() => navigate("/tracker")}>Daily Tracker</Button>
             <Button onClick={() => navigate("/")}>Home</Button>
           </div>
         </div>

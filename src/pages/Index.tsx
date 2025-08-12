@@ -29,6 +29,9 @@ const Index = () => {
               <Button size="lg" variant="outline" className="transition-smooth" onClick={() => navigate("/dashboard")}>
                 View sample dashboard
               </Button>
+              <Button size="lg" variant="secondary" className="transition-smooth" onClick={() => navigate("/tracker")}>
+                Open daily tracker
+              </Button>
             </div>
           </div>
         </section>
