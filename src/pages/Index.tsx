@@ -22,14 +22,14 @@ const Index = () => {
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-6">Smart, adaptive budgeting for your life</h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-10">An AI finance copilot that plans your budget, goals, and EMIs—personalized to income, city, and priorities.</p>
-            <div className="flex items-center justify-center gap-4">
-              <Button size="lg" className="shadow-elegant transition-smooth hover:shadow-glow" onClick={() => navigate("/onboarding")}>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+              <Button size="lg" className="shadow-elegant transition-smooth hover:shadow-glow w-full sm:w-auto" onClick={() => navigate("/onboarding")}>
                 Start your plan
               </Button>
-              <Button size="lg" variant="outline" className="transition-smooth" onClick={() => navigate("/dashboard")}>
+              <Button size="lg" variant="outline" className="transition-smooth w-full sm:w-auto" onClick={() => navigate("/dashboard")}>
                 View sample dashboard
               </Button>
-              <Button size="lg" variant="secondary" className="transition-smooth" onClick={() => navigate("/tracker")}>
+              <Button size="lg" variant="secondary" className="transition-smooth w-full sm:w-auto" onClick={() => navigate("/tracker")}>
                 Open daily tracker
               </Button>
             </div>

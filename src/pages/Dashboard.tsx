@@ -42,9 +42,9 @@ export default function Dashboard() {
         <link rel="canonical" href="https://1778dcd4-4c4f-40f6-bb5c-ec1b224c1580.lovableproject.com/dashboard" />
       </Helmet>
       <main className="container py-10">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-8">
           <h1 className="text-3xl font-bold">Your Monthly Plan</h1>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3 justify-start md:justify-end">
             <Button variant="outline" onClick={() => navigate("/onboarding")}>Edit inputs</Button>
             <Button variant="secondary" onClick={() => navigate("/tracker")}>Daily Tracker</Button>
             <Button onClick={() => navigate("/")}>Home</Button>

@@ -140,32 +140,34 @@ export default function Loans() {
             {prioritized.length === 0 ? (
               <p className="text-sm text-muted-foreground">No loans yet. Add one to see recommendations.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Loan</TableHead>
-                    <TableHead className="text-right">Rate %</TableHead>
-                    <TableHead className="text-right">Principal</TableHead>
-                    <TableHead className="text-right">Min EMI</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {prioritized.map((l, idx) => (
-                    <TableRow key={l.id}>
-                      <TableCell>{idx + 1}</TableCell>
-                      <TableCell className="font-medium">{l.name}</TableCell>
-                      <TableCell className="text-right">{l.rateAnnualPct.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(l.principalINR)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(l.minEmiINR)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => deleteLoan(l.id)}>Delete</Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Loan</TableHead>
+                      <TableHead className="text-right">Rate %</TableHead>
+                      <TableHead className="text-right">Principal</TableHead>
+                      <TableHead className="text-right">Min EMI</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {prioritized.map((l, idx) => (
+                      <TableRow key={l.id}>
+                        <TableCell>{idx + 1}</TableCell>
+                        <TableCell className="font-medium">{l.name}</TableCell>
+                        <TableCell className="text-right">{l.rateAnnualPct.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(l.principalINR)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(l.minEmiINR)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => deleteLoan(l.id)}>Delete</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -187,24 +189,26 @@ export default function Loans() {
                 {entries.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No EMIs due.</p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Due Date</TableHead>
-                        <TableHead>Loan</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {entries.map((e) => (
-                        <TableRow key={e.loanId + format(e.date, "yyyy-MM-dd") }>
-                          <TableCell>{format(e.date, "do MMM, EEE")}</TableCell>
-                          <TableCell className="font-medium">{e.name}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(e.amountINR)}</TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Due Date</TableHead>
+                          <TableHead>Loan</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {entries.map((e) => (
+                          <TableRow key={e.loanId + format(e.date, "yyyy-MM-dd") }>
+                            <TableCell>{format(e.date, "do MMM, EEE")}</TableCell>
+                            <TableCell className="font-medium">{e.name}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(e.amountINR)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </div>
             ))}

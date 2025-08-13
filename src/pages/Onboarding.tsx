@@ -117,7 +117,7 @@ export default function Onboarding() {
             </CardHeader>
             <CardContent className="space-y-3">
               {data.incomes.map((inc, idx) => (
-                <div key={idx} className="grid grid-cols-3 gap-3">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Input
                     value={inc.label}
                     onChange={(e) => {
@@ -146,7 +146,7 @@ export default function Onboarding() {
             </CardHeader>
             <CardContent className="space-y-3">
               {data.fixedExpenses.map((it, idx) => (
-                <div key={idx} className="grid grid-cols-2 gap-3">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input value={it.label} onChange={(e) => { const arr = [...data.fixedExpenses]; arr[idx] = { ...it, label: e.target.value }; setData({ ...data, fixedExpenses: arr }); }} />
                   <Input type="number" value={it.amount} onChange={(e) => { const arr = [...data.fixedExpenses]; arr[idx] = { ...it, amount: Number(e.target.value) }; setData({ ...data, fixedExpenses: arr }); }} />
                 </div>
@@ -163,7 +163,7 @@ export default function Onboarding() {
             </CardHeader>
             <CardContent className="space-y-3">
               {data.emis.map((e, idx) => (
-                <div key={idx} className="grid grid-cols-2 gap-3">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input value={e.label} onChange={(ev) => { const arr = [...data.emis]; arr[idx] = { ...e, label: ev.target.value }; setData({ ...data, emis: arr }); }} />
                   <Input type="number" value={e.amount} onChange={(ev) => { const arr = [...data.emis]; arr[idx] = { ...e, amount: Number(ev.target.value) }; setData({ ...data, emis: arr }); }} />
                 </div>
@@ -179,7 +179,7 @@ export default function Onboarding() {
             </CardHeader>
             <CardContent className="space-y-4">
               {data.goals.map((g, idx) => (
-                <div key={idx} className="grid grid-cols-5 gap-3">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                   <Input value={g.title} onChange={(e) => { const arr = [...data.goals]; arr[idx] = { ...g, title: e.target.value }; setData({ ...data, goals: arr }); }} placeholder="Goal title" />
                   <Input type="number" value={g.targetAmount} onChange={(e) => { const arr = [...data.goals]; arr[idx] = { ...g, targetAmount: Number(e.target.value) }; setData({ ...data, goals: arr }); }} placeholder="Target amt (INR)" />
                   <Input type="number" value={g.deadlineMonths} onChange={(e) => { const arr = [...data.goals]; arr[idx] = { ...g, deadlineMonths: Number(e.target.value) }; setData({ ...data, goals: arr }); }} placeholder="Months" />
