@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Tracker from "./pages/Tracker";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import Loans from "./pages/Loans";
+import MainLayout from "./layouts/MainLayout";
 
 const queryClient = new QueryClient();
 
@@ -23,11 +24,13 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/tracker" element={<Tracker />} />
-              <Route path="/loans" element={<Loans />} />
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/tracker" element={<Tracker />} />
+                <Route path="/loans" element={<Loans />} />
+              </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
