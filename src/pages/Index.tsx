@@ -1,9 +1,28 @@
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useUserData } from "@/context/UserDataContext";
+import { useEffect } from "react";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { userData } = useUserData();
+
+  useEffect(() => {
+    // Redirect to dashboard if onboarding is completed
+    if (userData.isOnboardingCompleted) {
+      navigate('/dashboard');
+    }
+  }, [userData.isOnboardingCompleted, navigate]);
+
+  const handleGetStarted = () => {
+    if (userData.isOnboardingCompleted) {
+      navigate('/dashboard');
+    } else {
+      navigate('/onboarding');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
@@ -40,9 +59,9 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   className="bg-green-600 hover:bg-green-700 shadow-lg w-full sm:w-auto px-8 py-3" 
-                  onClick={() => navigate("/dashboard")}
+                  onClick={handleGetStarted}
                 >
-                  Get Started
+                  {userData.isOnboardingCompleted ? 'Open Dashboard' : 'Start Your Financial Journey'}
                 </Button>
                 <Button 
                   size="lg" 

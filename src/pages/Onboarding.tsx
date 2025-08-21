@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { generateBudget, type BudgetInput } from "@/utils/budget";
+import { User, Globe, DollarSign, Receipt } from "lucide-react";
+import { useUserData } from "@/context/UserDataContext";
 import { useCurrency } from "@/context/CurrencyContext";
 
 const currencyOptions = [
@@ -19,195 +20,394 @@ const currencyOptions = [
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { setCurrency, format } = useCurrency();
-  const [data, setData] = useState<BudgetInput>({
-    cityTier: "Tier 1",
-    incomes: [{ label: "Your income", amount: 60000 }],
-    fixedExpenses: [
-      { label: "Rent", amount: 15000 },
-      { label: "Groceries", amount: 6000 },
-      { label: "Bills", amount: 4000 },
-    ],
-    emis: [],
-    savings: 0,
-    goals: [
-      { title: "iPhone", deadlineMonths: 12, preference: "Direct", priority: "Medium", targetAmount: 80000 },
-    ],
-  });
+  const { setCurrency } = useCurrency();
+  const { userData, updateProfile, updateIncome, updateExpenses, completeOnboarding } = useUserData();
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 4;
 
-  const plan = generateBudget(data);
+  const handleNext = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      completeOnboarding();
+      navigate('/dashboard');
+    }
+  };
 
-  const totalFixedPreview = plan.monthlyFixed + plan.monthlyEmi + plan.emergency + plan.monthlyGoals;
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    } else {
+      navigate('/');
+    }
+  };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Onboarding – Money Matter</title>
-        <meta name="description" content="Enter income, expenses, EMIs, and goals to build your plan." />
-        <link rel="canonical" href="https://1778dcd4-4c4f-40f6-bb5c-ec1b224c1580.lovableproject.com/onboarding" />
-      </Helmet>
+  const progress = (currentStep / totalSteps) * 100;
 
-      <main className="container py-10">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6">Let’s tailor your plan</h1>
-        <p className="text-muted-foreground mb-8">Answer a few quick questions. You can edit everything later.</p>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Basics</CardTitle>
-              <CardDescription>City tier and currency preferences</CardDescription>
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <User className="w-6 h-6 text-blue-600" />
+              </div>
+              <CardTitle className="text-2xl">Personal Information</CardTitle>
+              <CardDescription>Help us personalize your financial experience</CardDescription>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-2 gap-4">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="age">Age</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    placeholder="Enter your age"
+                    value={userData.profile.age || ''}
+                    onChange={(e) => updateProfile({ age: Number(e.target.value) })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="occupation">Occupation</Label>
+                  <Input
+                    id="occupation"
+                    placeholder="Software Engineer, Teacher, etc."
+                    value={userData.profile.occupation}
+                    onChange={(e) => updateProfile({ occupation: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
               <div>
-                <Label>City/Tier</Label>
+                <Label htmlFor="city">Current City</Label>
+                <Input
+                  id="city"
+                  placeholder="Mumbai, Bangalore, New York, etc."
+                  value={userData.profile.city}
+                  onChange={(e) => updateProfile({ city: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="cityTier">City Tier / Economic Level</Label>
                 <Select
-                  value={data.cityTier}
-                  onValueChange={(v) => setData((d) => ({ ...d, cityTier: v as BudgetInput["cityTier"] }))}
+                  value={userData.profile.cityTier}
+                  onValueChange={(value) => updateProfile({ cityTier: value as any })}
                 >
-                  <SelectTrigger><SelectValue placeholder="Select tier" /></SelectTrigger>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select your city's economic tier" />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Tier 1">Tier 1 (Metro)</SelectItem>
-                    <SelectItem value="Tier 2">Tier 2</SelectItem>
-                    <SelectItem value="Tier 3">Tier 3</SelectItem>
+                    <SelectItem value="Tier 1">Tier 1 (Metro cities)</SelectItem>
+                    <SelectItem value="Tier 2">Tier 2 (Major cities)</SelectItem>
+                    <SelectItem value="Tier 3">Tier 3 (Smaller cities & towns)</SelectItem>
                     <SelectItem value="Rural">Rural</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Currency</Label>
+                <Label htmlFor="currency">Preferred Currency</Label>
                 <Select
+                  value={userData.profile.preferredCurrency}
                   onValueChange={(code) => {
+                    updateProfile({ preferredCurrency: code });
                     const item = currencyOptions.find((c) => c.code === code)!;
                     setCurrency(item);
                   }}
-                  defaultValue="INR"
                 >
-                  <SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select preferred currency" />
+                  </SelectTrigger>
                   <SelectContent>
                     {currencyOptions.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>{c.symbol} {c.code}</SelectItem>
+                      <SelectItem key={c.code} value={c.code}>
+                        {c.symbol} {c.code}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </CardContent>
           </Card>
+        );
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick preview</CardTitle>
-              <CardDescription>Based on current inputs</CardDescription>
+      case 2:
+        return (
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <DollarSign className="w-6 h-6 text-green-600" />
+              </div>
+              <CardTitle className="text-2xl">Regional & Financial Settings</CardTitle>
+              <CardDescription>Configure your financial preferences</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span>Income</span><span>{format(plan.monthlyIncome)}</span></div>
-                <div className="flex justify-between"><span>Fixed + EMIs + Emergency + Goals</span><span>{format(totalFixedPreview)}</span></div>
-                <Separator />
-                <div className="flex justify-between font-medium"><span>Left for lifestyle</span><span>{format(plan.lifestyle)}</span></div>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="financialMonth">Financial Month Start Day</Label>
+                  <Select
+                    value={userData.profile.financialMonthStartDay.toString()}
+                    onValueChange={(value) => updateProfile({ financialMonthStartDay: Number(value) })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                        <SelectItem key={day} value={day.toString()}>
+                          {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
-        </div>
+        );
 
-        <div className="grid gap-6 mt-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Income</CardTitle>
-              <CardDescription>Add contributors if needed</CardDescription>
+      case 3:
+        return (
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                <DollarSign className="w-6 h-6 text-yellow-600" />
+              </div>
+              <CardTitle className="text-2xl">Income & Savings</CardTitle>
+              <CardDescription>Tell us about your financial situation</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {data.incomes.map((inc, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="monthlyIncome">Your Monthly Income</Label>
                   <Input
-                    value={inc.label}
-                    onChange={(e) => {
-                      const v = e.target.value; const arr = [...data.incomes]; arr[idx] = { ...inc, label: v }; setData({ ...data, incomes: arr });
-                    }}
-                    placeholder="Label"
-                  />
-                  <Input
+                    id="monthlyIncome"
                     type="number"
-                    value={inc.amount}
-                    onChange={(e) => {
-                      const v = Number(e.target.value); const arr = [...data.incomes]; arr[idx] = { ...inc, amount: v }; setData({ ...data, incomes: arr });
-                    }}
-                    placeholder="Amount/month"
+                    placeholder="₹ 70000"
+                    value={userData.income.monthlyIncome || ''}
+                    onChange={(e) => updateIncome({ monthlyIncome: Number(e.target.value) })}
+                    className="mt-1"
                   />
-                  <Button variant="secondary" onClick={() => setData((d) => ({ ...d, incomes: d.incomes.filter((_, i) => i !== idx) }))}>Remove</Button>
                 </div>
-              ))}
-              <Button variant="outline" onClick={() => setData((d) => ({ ...d, incomes: [...d.incomes, { label: "Other", amount: 0 }] }))}>Add income</Button>
+                <div>
+                  <Label htmlFor="familyIncome">Family Monthly Income (Optional)</Label>
+                  <Input
+                    id="familyIncome"
+                    type="number"
+                    placeholder="₹ 80000"
+                    value={userData.income.familyMonthlyIncome || ''}
+                    onChange={(e) => updateIncome({ familyMonthlyIncome: Number(e.target.value) })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="savings">Current Savings</Label>
+                  <Input
+                    id="savings"
+                    type="number"
+                    placeholder="₹ 150000"
+                    value={userData.income.currentSavings || ''}
+                    onChange={(e) => updateIncome({ currentSavings: Number(e.target.value) })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="investments">Current Investments</Label>
+                  <Input
+                    id="investments"
+                    type="number"
+                    placeholder="₹ 100000"
+                    value={userData.income.currentInvestments || ''}
+                    onChange={(e) => updateIncome({ currentInvestments: Number(e.target.value) })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
+        );
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Fixed expenses</CardTitle>
+      case 4:
+        return (
+          <Card className="max-w-4xl mx-auto">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <Receipt className="w-6 h-6 text-red-600" />
+              </div>
+              <CardTitle className="text-2xl">Fixed Monthly Expenses</CardTitle>
+              <CardDescription>Estimate your recurring monthly expenses. These are used for budgeting and financial planning.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {data.fixedExpenses.map((it, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Input value={it.label} onChange={(e) => { const arr = [...data.fixedExpenses]; arr[idx] = { ...it, label: e.target.value }; setData({ ...data, fixedExpenses: arr }); }} />
-                  <Input type="number" value={it.amount} onChange={(e) => { const arr = [...data.fixedExpenses]; arr[idx] = { ...it, amount: Number(e.target.value) }; setData({ ...data, fixedExpenses: arr }); }} />
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="rent">Rent</Label>
+                    <Input
+                      id="rent"
+                      type="number"
+                      placeholder="₹"
+                      value={userData.expenses.rent || ''}
+                      onChange={(e) => updateExpenses({ rent: Number(e.target.value) })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="transport">Transport</Label>
+                    <Input
+                      id="transport"
+                      type="number"
+                      placeholder="₹ 1000"
+                      value={userData.expenses.transport || ''}
+                      onChange={(e) => updateExpenses({ transport: Number(e.target.value) })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="insurance">Insurance</Label>
+                    <Input
+                      id="insurance"
+                      type="number"
+                      placeholder="₹"
+                      value={userData.expenses.insurance || ''}
+                      onChange={(e) => updateExpenses({ insurance: Number(e.target.value) })}
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
-              ))}
-              <Button variant="outline" onClick={() => setData((d) => ({ ...d, fixedExpenses: [...d.fixedExpenses, { label: "Other", amount: 0 }] }))}>Add expense</Button>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="groceries">Groceries</Label>
+                    <Input
+                      id="groceries"
+                      type="number"
+                      placeholder="₹ 6000"
+                      value={userData.expenses.groceries || ''}
+                      onChange={(e) => updateExpenses({ groceries: Number(e.target.value) })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="fuel">Fuel</Label>
+                    <Input
+                      id="fuel"
+                      type="number"
+                      placeholder="₹"
+                      value={userData.expenses.fuel || ''}
+                      onChange={(e) => updateExpenses({ fuel: Number(e.target.value) })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="subscriptions">Subscriptions</Label>
+                    <Input
+                      id="subscriptions"
+                      type="number"
+                      placeholder="₹"
+                      value={userData.expenses.subscriptions || ''}
+                      onChange={(e) => updateExpenses({ subscriptions: Number(e.target.value) })}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="utilities">Utilities</Label>
+                    <Input
+                      id="utilities"
+                      type="number"
+                      placeholder="₹ 4000"
+                      value={userData.expenses.utilities || ''}
+                      onChange={(e) => updateExpenses({ utilities: Number(e.target.value) })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="internetPhone">Internet Phone</Label>
+                    <Input
+                      id="internetPhone"
+                      type="number"
+                      placeholder="₹"
+                      value={userData.expenses.internetPhone || ''}
+                      onChange={(e) => updateExpenses({ internetPhone: Number(e.target.value) })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="domesticHelp">Domestic Help</Label>
+                    <Input
+                      id="domesticHelp"
+                      type="number"
+                      placeholder="₹"
+                      value={userData.expenses.domesticHelp || ''}
+                      onChange={(e) => updateExpenses({ domesticHelp: Number(e.target.value) })}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <div>
+                  <Label htmlFor="maintenance">Maintenance</Label>
+                  <Input
+                    id="maintenance"
+                    type="number"
+                    placeholder="₹"
+                    value={userData.expenses.maintenance || ''}
+                    onChange={(e) => updateExpenses({ maintenance: Number(e.target.value) })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="other">Other</Label>
+                  <Input
+                    id="other"
+                    type="number"
+                    placeholder="₹ 40000"
+                    value={userData.expenses.other || ''}
+                    onChange={(e) => updateExpenses({ other: Number(e.target.value) })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </div>
+        );
 
-        <div className="grid gap-6 mt-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>EMIs / Debts</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {data.emis.map((e, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Input value={e.label} onChange={(ev) => { const arr = [...data.emis]; arr[idx] = { ...e, label: ev.target.value }; setData({ ...data, emis: arr }); }} />
-                  <Input type="number" value={e.amount} onChange={(ev) => { const arr = [...data.emis]; arr[idx] = { ...e, amount: Number(ev.target.value) }; setData({ ...data, emis: arr }); }} />
-                </div>
-              ))}
-              <Button variant="outline" onClick={() => setData((d) => ({ ...d, emis: [...d.emis, { label: "Loan", amount: 0 }] }))}>Add EMI</Button>
-            </CardContent>
-          </Card>
+      default:
+        return null;
+    }
+  };
 
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Goals</CardTitle>
-              <CardDescription>Tell us what you’re aiming for</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {data.goals.map((g, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                  <Input value={g.title} onChange={(e) => { const arr = [...data.goals]; arr[idx] = { ...g, title: e.target.value }; setData({ ...data, goals: arr }); }} placeholder="Goal title" />
-                  <Input type="number" value={g.targetAmount} onChange={(e) => { const arr = [...data.goals]; arr[idx] = { ...g, targetAmount: Number(e.target.value) }; setData({ ...data, goals: arr }); }} placeholder="Target amt (INR)" />
-                  <Input type="number" value={g.deadlineMonths} onChange={(e) => { const arr = [...data.goals]; arr[idx] = { ...g, deadlineMonths: Number(e.target.value) }; setData({ ...data, goals: arr }); }} placeholder="Months" />
-                  <Select value={g.preference} onValueChange={(v) => { const arr = [...data.goals]; arr[idx] = { ...g, preference: v as any }; setData({ ...data, goals: arr }); }}>
-                    <SelectTrigger><SelectValue placeholder="Preference" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Direct">Direct</SelectItem>
-                      <SelectItem value="EMI">EMI</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={g.priority} onValueChange={(v) => { const arr = [...data.goals]; arr[idx] = { ...g, priority: v as any }; setData({ ...data, goals: arr }); }}>
-                    <SelectTrigger><SelectValue placeholder="Priority" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Low">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
-              <Button variant="outline" onClick={() => setData((d) => ({ ...d, goals: [...d.goals, { title: "New goal", deadlineMonths: 12, preference: "Direct", priority: "Low", targetAmount: 0 }] }))}>Add goal</Button>
-            </CardContent>
-          </Card>
-        </div>
+  return (
+    <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Onboarding – Money Matter</title>
+        <meta name="description" content="Complete your financial profile to get personalized insights." />
+        <link rel="canonical" href="https://1778dcd4-4c4f-40f6-bb5c-ec1b224c1580.lovableproject.com/onboarding" />
+      </Helmet>
 
-        <div className="flex items-center justify-between mt-10">
-          <Button variant="secondary" onClick={() => navigate("/")}>Back</Button>
-          <Button size="lg" onClick={() => navigate("/dashboard", { state: { data, plan } })}>Generate my plan</Button>
+      <main className="container py-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <p className="text-sm text-muted-foreground mb-2">Step {currentStep} of {totalSteps}</p>
+            <div className="text-sm text-muted-foreground mb-4">{Math.round(progress)}% Complete</div>
+            <Progress value={progress} className="max-w-md mx-auto mb-6" />
+          </div>
+
+          {renderStep()}
+
+          <div className="flex items-center justify-between mt-8 max-w-2xl mx-auto">
+            <Button variant="outline" onClick={handleBack}>
+              Back
+            </Button>
+            <Button onClick={handleNext}>
+              {currentStep === totalSteps ? 'Complete Setup' : 'Continue'}
+            </Button>
+          </div>
         </div>
       </main>
     </div>
