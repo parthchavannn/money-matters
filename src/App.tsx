@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { UserDataProvider } from "./context/UserDataContext";
@@ -30,7 +30,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <HashRouter>
               <div className="flex h-screen bg-gray-50">
                 <Sidebar />
                 <div className="flex-1 overflow-auto">
@@ -50,7 +50,7 @@ const App = () => (
                   </Routes>
                 </div>
               </div>
-            </BrowserRouter>
+            </HashRouter>
           </TooltipProvider>
         </CurrencyProvider>
       </UserDataProvider>
