@@ -6,6 +6,8 @@ import { HashRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { UserDataProvider } from "./context/UserDataContext";
+import { useAuth } from "./hooks/useAuth";
+import { AuthForm } from "./components/auth/AuthForm";
 import Sidebar from "./components/layout/Sidebar";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -22,6 +24,46 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthForm />;
+  }
+
+  return (
+    <HashRouter>
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 overflow-auto">
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/goals" element={<Goals />} />
+            <Route path="/budget-planner" element={<BudgetPlanner />} />
+            <Route path="/debts" element={<Debts />} />
+            <Route path="/investments" element={<Investments />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/tracker" element={<Tracker />} />
+            <Route path="/loans" element={<Loans />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
+      </div>
+    </HashRouter>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
@@ -30,27 +72,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <HashRouter>
-              <div className="flex h-screen bg-gray-50">
-                <Sidebar />
-                <div className="flex-1 overflow-auto">
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/goals" element={<Goals />} />
-                    <Route path="/budget-planner" element={<BudgetPlanner />} />
-                    <Route path="/debts" element={<Debts />} />
-                    <Route path="/investments" element={<Investments />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/tracker" element={<Tracker />} />
-                    <Route path="/loans" element={<Loans />} />
-                    <Route path="/onboarding" element={<Onboarding />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </div>
-              </div>
-            </HashRouter>
+            <AppContent />
           </TooltipProvider>
         </CurrencyProvider>
       </UserDataProvider>

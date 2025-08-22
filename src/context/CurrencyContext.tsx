@@ -31,15 +31,15 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [rates, setRates] = useState<Rates>({ INR: 1, USD: 0.012, EUR: 0.011, AED: 0.044 });
 
   useEffect(() => {
-    // Fetch daily rates from exchangerate.host (no API key required)
-    fetch("https://api.exchangerate.host/latest?base=INR&symbols=INR,USD,EUR,AED")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.rates) setRates(data.rates as Rates);
-      })
-      .catch(() => {
-        // ignore and keep defaults
-      });
+    // Use fallback rates since exchange API requires API key
+    // These are approximate rates for demonstration
+    const fallbackRates = {
+      INR: 1,
+      USD: 0.012,
+      EUR: 0.011,
+      AED: 0.044
+    };
+    setRates(fallbackRates);
   }, []);
 
   const value = useMemo<CurrencyContextValue>(() => {

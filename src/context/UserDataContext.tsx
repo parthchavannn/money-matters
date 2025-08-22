@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface UserProfile {
   fullName: string;
@@ -84,46 +86,140 @@ const defaultUserData: UserData = {
 const UserDataContext = createContext<UserDataContextValue | undefined>(undefined);
 
 export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [userData, setUserData] = useState<UserData>(() => {
-    const saved = localStorage.getItem('moneyMatterUserData');
-    return saved ? JSON.parse(saved) : defaultUserData;
-  });
+  const { user } = useAuth();
+  const [userData, setUserData] = useState<UserData>(defaultUserData);
+  const [loading, setLoading] = useState(true);
 
+  // Load user data from Supabase when user is authenticated
   useEffect(() => {
-    localStorage.setItem('moneyMatterUserData', JSON.stringify(userData));
-  }, [userData]);
+    const loadUserData = async () => {
+      if (!user) {
+        setUserData(defaultUserData);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading user data:', error);
+          setLoading(false);
+          return;
+        }
+
+        if (data) {
+          const loadedUserData: UserData = {
+            profile: {
+              fullName: data.full_name || '',
+              email: data.email || '',
+              age: data.age || 0,
+              occupation: data.employment_status || '',
+              city: data.location || '',
+              cityTier: 'Tier 1',
+              preferredCurrency: data.currency_code || 'INR',
+              financialMonthStartDay: 1,
+            },
+            income: {
+              monthlyIncome: Number(data.monthly_income) || 0,
+              familyMonthlyIncome: Number(data.monthly_income) || 0,
+              currentSavings: Number(data.monthly_savings) || 0,
+              currentInvestments: Number(data.investment_amount) || 0,
+            },
+            expenses: data.monthly_expenses ? { 
+              ...defaultUserData.expenses, 
+              ...(data.monthly_expenses as Record<string, number>) 
+            } : defaultUserData.expenses,
+            isOnboardingCompleted: data.onboarding_completed || false,
+          };
+          setUserData(loadedUserData);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [user]);
+
+  const saveToSupabase = async (updatedData: UserData) => {
+    if (!user) return;
+
+    try {
+      const profileData = {
+        user_id: user.id,
+        full_name: updatedData.profile.fullName,
+        email: updatedData.profile.email,
+        age: updatedData.profile.age,
+        employment_status: updatedData.profile.occupation,
+        location: updatedData.profile.city,
+        currency_code: updatedData.profile.preferredCurrency,
+        monthly_income: updatedData.income.monthlyIncome,
+        monthly_savings: updatedData.income.currentSavings,
+        investment_amount: updatedData.income.currentInvestments,
+        monthly_expenses: updatedData.expenses as any,
+        onboarding_completed: updatedData.isOnboardingCompleted,
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert(profileData);
+
+      if (error) {
+        console.error('Error saving user data:', error);
+      }
+    } catch (error) {
+      console.error('Error saving user data:', error);
+    }
+  };
 
   const updateProfile = (profile: Partial<UserProfile>) => {
-    setUserData(prev => ({
-      ...prev,
-      profile: { ...prev.profile, ...profile }
-    }));
+    const updatedData = {
+      ...userData,
+      profile: { ...userData.profile, ...profile }
+    };
+    setUserData(updatedData);
+    saveToSupabase(updatedData);
   };
 
   const updateIncome = (income: Partial<IncomeData>) => {
-    setUserData(prev => ({
-      ...prev,
-      income: { ...prev.income, ...income }
-    }));
+    const updatedData = {
+      ...userData,
+      income: { ...userData.income, ...income }
+    };
+    setUserData(updatedData);
+    saveToSupabase(updatedData);
   };
 
   const updateExpenses = (expenses: Partial<ExpenseData>) => {
-    setUserData(prev => ({
-      ...prev,
-      expenses: { ...prev.expenses, ...expenses }
-    }));
+    const updatedData = {
+      ...userData,
+      expenses: { ...userData.expenses, ...expenses }
+    };
+    setUserData(updatedData);
+    saveToSupabase(updatedData);
   };
 
   const completeOnboarding = () => {
-    setUserData(prev => ({
-      ...prev,
+    const updatedData = {
+      ...userData,
       isOnboardingCompleted: true
-    }));
+    };
+    setUserData(updatedData);
+    saveToSupabase(updatedData);
   };
 
   const resetUserData = () => {
     setUserData(defaultUserData);
-    localStorage.removeItem('moneyMatterUserData');
+    if (user) {
+      saveToSupabase(defaultUserData);
+    }
   };
 
   return (
