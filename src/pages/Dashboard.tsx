@@ -2,37 +2,74 @@ import { Helmet } from "react-helmet-async";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip as ReTooltip } from "recharts";
 import { useCurrency } from "@/context/CurrencyContext";
+import { useUserData } from "@/context/UserDataContext";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import type { BudgetPlan } from "@/utils/budget";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const loc = useLocation();
   const { format } = useCurrency();
-  const plan: BudgetPlan = (loc.state?.plan as BudgetPlan) || {
-    monthlyIncome: 60000,
-    monthlyFixed: 20000,
-    monthlyEmi: 5000,
-    monthlyGoals: 6000,
-    emergency: 3000,
-    lifestyle: 26000,
-    leftover: 26000,
+  const { userData } = useUserData();
+  const { user } = useAuth();
+  const [goals, setGoals] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    if (user) {
+      loadUserGoals();
+      loadRecentTransactions();
+    }
+  }, [user]);
+
+  const loadUserGoals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('status', 'active')
+        .limit(3);
+
+      if (error) throw error;
+      setGoals(data || []);
+    } catch (error) {
+      console.error('Error loading goals:', error);
+    }
   };
 
-  const data = [
-    { name: "Fixed", value: plan.monthlyFixed },
-    { name: "EMIs", value: plan.monthlyEmi },
-    { name: "Goals", value: plan.monthlyGoals },
-    { name: "Emergency", value: plan.emergency },
-    { name: "Lifestyle", value: plan.lifestyle },
-  ];
+  const loadRecentTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-  const COLORS = ["#8b5cf6", "#a78bfa", "#c4b5fd", "#e9d5ff", "#7c3aed"];
+      if (error) throw error;
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error loading transactions:', error);
+    }
+  };
 
-  const tip = plan.leftover < 2000
-    ? "Budget is tight. Consider reducing lifestyle spending by 5% and prioritizing emergency fund."
-    : `You have ${format(plan.leftover)} discretionary. Suggest saving a bit more toward your top goal.`;
+  // Calculate user-specific financial data
+  const monthlyIncome = userData.income.monthlyIncome;
+  const totalExpenses = Object.values(userData.expenses).reduce((sum, expense) => sum + expense, 0);
+  const availableForGoals = monthlyIncome - totalExpenses;
+  const dailySpendable = availableForGoals / 30;
+
+  const expenseCategories = [
+    { name: "Rent", value: userData.expenses.rent, color: "#8b5cf6" },
+    { name: "Groceries", value: userData.expenses.groceries, color: "#a78bfa" },
+    { name: "Transport", value: userData.expenses.transport, color: "#c4b5fd" },
+    { name: "Utilities", value: userData.expenses.utilities, color: "#e9d5ff" },
+    { name: "Other", value: userData.expenses.other, color: "#7c3aed" },
+  ].filter(category => category.value > 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -45,8 +82,8 @@ export default function Dashboard() {
       <div className="md:pl-64">
         <div className="px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome back! 👋</h1>
-            <p className="text-gray-600">Here's your financial overview for August 2025</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome back, {userData.profile.fullName || 'there'}! 👋</h1>
+            <p className="text-gray-600">Here's your personalized financial overview for August 2025</p>
           </div>
 
           {/* Daily Spendable Guide */}
@@ -54,7 +91,7 @@ export default function Dashboard() {
             <h2 className="text-xl font-semibold mb-2">Your Daily Spendable Guide</h2>
             <p className="text-blue-100 mb-4">A safe-to-spend amount for your daily wants, after all savings and needs.</p>
             <div className="text-right">
-              <div className="text-3xl font-bold">{format(1750)}</div>
+              <div className="text-3xl font-bold">{format(Math.max(0, dailySpendable))}</div>
               <div className="text-blue-100">per day</div>
             </div>
           </div>
@@ -66,28 +103,28 @@ export default function Dashboard() {
                 <span className="text-green-100">Monthly Income</span>
                 <span className="text-green-200 text-sm">+12%</span>
               </div>
-              <div className="text-2xl font-bold">{format(150000)}</div>
+              <div className="text-2xl font-bold">{format(monthlyIncome)}</div>
             </div>
             <div className="bg-red-600 text-white rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-red-100">Fixed Expenses</span>
                 <span className="text-red-200 text-sm">⏰</span>
               </div>
-              <div className="text-2xl font-bold">{format(51000)}</div>
+              <div className="text-2xl font-bold">{format(totalExpenses)}</div>
             </div>
             <div className="bg-blue-600 text-white rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-blue-100">Total Savings</span>
                 <span className="text-blue-200 text-sm">📈</span>
               </div>
-              <div className="text-2xl font-bold">{format(250000)}</div>
+              <div className="text-2xl font-bold">{format(userData.income.currentSavings)}</div>
             </div>
             <div className="bg-purple-600 text-white rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-purple-100">Available for Goals</span>
                 <span className="text-purple-200 text-sm">🎯</span>
               </div>
-              <div className="text-2xl font-bold">{format(81500)}</div>
+              <div className="text-2xl font-bold">{format(Math.max(0, availableForGoals))}</div>
             </div>
           </div>
 
@@ -216,33 +253,51 @@ export default function Dashboard() {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Active Goals</h3>
-                <button className="text-blue-600 text-sm hover:underline">View All</button>
+                <button 
+                  className="text-blue-600 text-sm hover:underline"
+                  onClick={() => navigate('/goals')}
+                >
+                  View All
+                </button>
               </div>
               
               <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Emergency Fund</span>
-                    <span className="text-blue-600 text-sm">high</span>
+                {goals.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-4">No goals yet! Start by creating your first financial goal.</p>
+                    <button 
+                      onClick={() => navigate('/goals')}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Create Goal
+                    </button>
                   </div>
-                  <div className="text-sm text-gray-600 mb-2">₹45,000 / ₹150,000</div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: "30%" }}></div>
-                  </div>
-                  <div className="text-sm text-gray-500">30% complete</div>
-                </div>
-
-                <div className="border rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Goa Trip with Friends</span>
-                    <span className="text-orange-600 text-sm">medium</span>
-                  </div>
-                  <div className="text-sm text-gray-600 mb-2">₹2,000 / ₹10,000</div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                    <div className="bg-orange-600 h-2 rounded-full" style={{ width: "20%" }}></div>
-                  </div>
-                  <div className="text-sm text-gray-500">20% complete</div>
-                </div>
+                ) : (
+                  goals.map((goal: any) => {
+                    const progress = goal.target_amount > 0 ? (goal.current_amount / goal.target_amount) * 100 : 0;
+                    const priorityColor = goal.priority === 'high' ? 'text-red-600' : 
+                                        goal.priority === 'medium' ? 'text-orange-600' : 'text-green-600';
+                    
+                    return (
+                      <div key={goal.id} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium">{goal.title}</span>
+                          <span className={`text-sm ${priorityColor}`}>{goal.priority}</span>
+                        </div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          {format(goal.current_amount)} / {format(goal.target_amount)}
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full" 
+                            style={{ width: `${Math.min(progress, 100)}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-sm text-gray-500">{Math.round(progress)}% complete</div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

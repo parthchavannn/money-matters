@@ -14,6 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      debts: {
+        Row: {
+          created_at: string
+          creditor_name: string
+          debt_type: string
+          due_date: string | null
+          id: string
+          interest_rate: number | null
+          minimum_payment: number | null
+          monthly_payment: number | null
+          remaining_amount: number
+          status: string | null
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          creditor_name: string
+          debt_type: string
+          due_date?: string | null
+          id?: string
+          interest_rate?: number | null
+          minimum_payment?: number | null
+          monthly_payment?: number | null
+          remaining_amount: number
+          status?: string | null
+          total_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          creditor_name?: string
+          debt_type?: string
+          due_date?: string | null
+          id?: string
+          interest_rate?: number | null
+          minimum_payment?: number | null
+          monthly_payment?: number | null
+          remaining_amount?: number
+          status?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      goals: {
+        Row: {
+          category: string | null
+          created_at: string
+          current_amount: number | null
+          description: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          target_amount: number
+          target_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          current_amount?: number | null
+          description?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          target_amount: number
+          target_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          current_amount?: number | null
+          description?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          target_amount?: number
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
