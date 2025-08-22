@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { CurrencyProvider } from "./context/CurrencyContext";
-import { UserDataProvider } from "./context/UserDataContext";
+import { UserDataProvider, useUserData } from "./context/UserDataContext";
 import { useAuth } from "./hooks/useAuth";
 import { AuthForm } from "./components/auth/AuthForm";
 import Sidebar from "./components/layout/Sidebar";
@@ -26,6 +26,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { user, loading } = useAuth();
+  const { userData } = useUserData();
 
   if (loading) {
     return (
@@ -37,6 +38,20 @@ const AppContent = () => {
 
   if (!user) {
     return <AuthForm />;
+  }
+
+  // If user is logged in but hasn't completed onboarding, redirect to onboarding
+  if (!userData.isOnboardingCompleted) {
+    return (
+      <HashRouter>
+        <div className="min-h-screen">
+          <Routes>
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="*" element={<Onboarding />} />
+          </Routes>
+        </div>
+      </HashRouter>
+    );
   }
 
   return (
