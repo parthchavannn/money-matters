@@ -14,7 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          age: number | null
+          created_at: string
+          currency_code: string | null
+          email: string | null
+          emergency_fund: number | null
+          employment_status: string | null
+          full_name: string | null
+          gender: string | null
+          id: string
+          investment_amount: number | null
+          location: string | null
+          monthly_expenses: Json | null
+          monthly_income: number | null
+          monthly_savings: number | null
+          onboarding_completed: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          currency_code?: string | null
+          email?: string | null
+          emergency_fund?: number | null
+          employment_status?: string | null
+          full_name?: string | null
+          gender?: string | null
+          id?: string
+          investment_amount?: number | null
+          location?: string | null
+          monthly_expenses?: Json | null
+          monthly_income?: number | null
+          monthly_savings?: number | null
+          onboarding_completed?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          currency_code?: string | null
+          email?: string | null
+          emergency_fund?: number | null
+          employment_status?: string | null
+          full_name?: string | null
+          gender?: string | null
+          id?: string
+          investment_amount?: number | null
+          location?: string | null
+          monthly_expenses?: Json | null
+          monthly_income?: number | null
+          monthly_savings?: number | null
+          onboarding_completed?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          transaction_date: string
+          transaction_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          transaction_date?: string
+          transaction_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          transaction_date?: string
+          transaction_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
