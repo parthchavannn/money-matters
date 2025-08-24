@@ -43,6 +43,7 @@ export interface UserData {
 
 interface UserDataContextValue {
   userData: UserData;
+  loading: boolean;
   updateProfile: (profile: Partial<UserProfile>) => void;
   updateIncome: (income: Partial<IncomeData>) => void;
   updateExpenses: (expenses: Partial<ExpenseData>) => void;
@@ -226,6 +227,7 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     <UserDataContext.Provider
       value={{
         userData,
+        loading,
         updateProfile,
         updateIncome,
         updateExpenses,

@@ -25,10 +25,10 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { user, loading } = useAuth();
-  const { userData } = useUserData();
+  const { user, loading: authLoading } = useAuth();
+  const { userData, loading: userDataLoading } = useUserData();
 
-  if (loading) {
+  if (authLoading || userDataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
