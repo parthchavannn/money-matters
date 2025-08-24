@@ -7,16 +7,51 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { DollarSign, RefreshCw, Save, AlertTriangle, Target, Lightbulb } from "lucide-react";
 import { useCurrency } from "@/context/CurrencyContext";
+import { useUserData } from "@/context/UserDataContext";
 
 export default function BudgetPlanner() {
   const { format } = useCurrency();
+  const { userData } = useUserData();
+
+  const monthlyIncome = userData?.income?.monthlyIncome || 0;
+  const totalExpenses = Object.values(userData?.expenses || {}).reduce((sum, val) => sum + (val || 0), 0);
+  const currentSavings = userData?.income?.currentSavings || 0;
+  const currentInvestments = userData?.income?.currentInvestments || 0;
+  
+  // Calculate suggested monthly allocations based on 50/30/20 rule
+  const suggestedSavings = Math.round(monthlyIncome * 0.2);
+  const suggestedEmergencyFund = Math.round(monthlyIncome * 0.1);
+  const suggestedInvestment = Math.round(monthlyIncome * 0.1);
+
+  const totalAllocated = totalExpenses + suggestedSavings + suggestedEmergencyFund + suggestedInvestment;
+  const remaining = monthlyIncome - totalAllocated;
+  const budgetUtilization = monthlyIncome > 0 ? Math.round((totalAllocated / monthlyIncome) * 100) : 0;
 
   const budgetCategories = [
-    { name: "Fixed Expenses", amount: 51000, percentage: 32, color: "bg-red-500" },
-    { name: "Debt Payments", amount: 17500, percentage: 11, color: "bg-orange-500" },
-    { name: "Goal Savings", amount: 14000, percentage: 9, color: "bg-blue-500" },
-    { name: "Emergency Fund", amount: 15000, percentage: 9, color: "bg-green-500" },
-    { name: "Discretionary", amount: 10000, percentage: 6, color: "bg-purple-500" },
+    { 
+      name: "Fixed Expenses", 
+      amount: totalExpenses, 
+      percentage: monthlyIncome > 0 ? Math.round((totalExpenses / monthlyIncome) * 100) : 0, 
+      color: "bg-red-500" 
+    },
+    { 
+      name: "Suggested Savings", 
+      amount: suggestedSavings, 
+      percentage: monthlyIncome > 0 ? Math.round((suggestedSavings / monthlyIncome) * 100) : 0, 
+      color: "bg-blue-500" 
+    },
+    { 
+      name: "Emergency Fund", 
+      amount: suggestedEmergencyFund, 
+      percentage: monthlyIncome > 0 ? Math.round((suggestedEmergencyFund / monthlyIncome) * 100) : 0, 
+      color: "bg-green-500" 
+    },
+    { 
+      name: "Investment", 
+      amount: suggestedInvestment, 
+      percentage: monthlyIncome > 0 ? Math.round((suggestedInvestment / monthlyIncome) * 100) : 0, 
+      color: "bg-purple-500" 
+    },
   ];
 
   return (
@@ -61,49 +96,57 @@ export default function BudgetPlanner() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <Label htmlFor="goalSavings">Goal Savings</Label>
+                    <Label htmlFor="monthlySavings">Target Monthly Savings</Label>
                     <Input 
-                      id="goalSavings" 
+                      id="monthlySavings" 
                       type="number" 
-                      defaultValue="14000" 
+                      defaultValue={suggestedSavings} 
                       className="mt-1"
                     />
-                    <p className="text-sm text-gray-500 mt-1">AI suggests: ₹14,000</p>
+                    <p className="text-sm text-gray-500 mt-1">AI suggests: {format(suggestedSavings)} (20% of income)</p>
                   </div>
 
                   <div>
-                    <Label htmlFor="emergencyFund">Emergency Fund</Label>
+                    <Label htmlFor="emergencyFund">Emergency Fund Goal</Label>
                     <Input 
                       id="emergencyFund" 
                       type="number" 
-                      defaultValue="15000" 
+                      defaultValue={suggestedEmergencyFund} 
                       className="mt-1"
                     />
-                    <p className="text-sm text-gray-500 mt-1">AI suggests: ₹15,000</p>
+                    <p className="text-sm text-gray-500 mt-1">AI suggests: {format(suggestedEmergencyFund)} (10% of income)</p>
                   </div>
 
                   <div>
-                    <Label htmlFor="lifestyle">Lifestyle & Entertainment</Label>
+                    <Label htmlFor="investmentAmount">Investment Amount</Label>
                     <Input 
-                      id="lifestyle" 
+                      id="investmentAmount" 
                       type="number" 
-                      defaultValue="10000" 
+                      defaultValue={suggestedInvestment} 
                       className="mt-1"
                     />
-                    <p className="text-sm text-gray-500 mt-1">For dining out, entertainment, shopping, etc.</p>
+                    <p className="text-sm text-gray-500 mt-1">AI suggests: {format(suggestedInvestment)} (10% of income)</p>
                   </div>
 
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="font-medium text-gray-900 mb-2">Fixed Expenses</h3>
-                    <p className="text-sm text-gray-600 mb-3">These cannot be changed here:</p>
+                    <p className="text-sm text-gray-600 mb-3">From your onboarding data:</p>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span>Monthly Expenses</span>
-                        <span>₹51,000</span>
+                        <span>Total Monthly Expenses</span>
+                        <span>{format(totalExpenses)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Debt/EMI Payments</span>
-                        <span>₹17,500</span>
+                        <span>Monthly Income</span>
+                        <span>{format(monthlyIncome)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Current Savings</span>
+                        <span>{format(currentSavings)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Current Investments</span>
+                        <span>{format(currentInvestments)}</span>
                       </div>
                     </div>
                   </div>
@@ -123,23 +166,23 @@ export default function BudgetPlanner() {
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
                       <div className="text-sm opacity-90">Total Income</div>
-                      <div className="text-2xl font-bold">{format(158000)}</div>
+                      <div className="text-2xl font-bold">{format(monthlyIncome)}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-sm opacity-90">Total Allocated</div>
-                      <div className="text-2xl font-bold">{format(107500)}</div>
+                      <div className="text-2xl font-bold">{format(totalAllocated)}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-sm opacity-90">Remaining</div>
-                      <div className="text-2xl font-bold">{format(50500)}</div>
+                      <div className="text-2xl font-bold">{format(remaining)}</div>
                     </div>
                   </div>
                   <div className="mb-2">
                     <div className="flex justify-between text-sm mb-1">
                       <span>Budget Utilization</span>
-                      <span>68%</span>
+                      <span>{budgetUtilization}%</span>
                     </div>
-                    <Progress value={68} className="h-2" />
+                    <Progress value={budgetUtilization} className="h-2" />
                   </div>
                 </CardContent>
               </Card>
@@ -177,7 +220,7 @@ export default function BudgetPlanner() {
                   <Badge variant="destructive">important</Badge>
                 </div>
                 <p className="text-gray-600 mb-3">
-                  Aim to save at least ₹15,800 monthly for emergencies. Start with ₹500 if budget is tight.
+                  Aim to save at least {format(suggestedEmergencyFund)} monthly for emergencies. Current savings: {format(currentSavings)}
                 </p>
                 <Button variant="outline" size="sm">Start Emergency Fund</Button>
               </div>
@@ -189,7 +232,7 @@ export default function BudgetPlanner() {
                   <Badge variant="secondary">opportunity</Badge>
                 </div>
                 <p className="text-gray-600 mb-3">
-                  You have ₹50,500 extra. Consider allocating 70% to high-priority goals.
+                  You have {format(remaining)} remaining. Consider allocating 70% to high-priority goals.
                 </p>
                 <Button variant="outline" size="sm">Increase Savings</Button>
               </div>

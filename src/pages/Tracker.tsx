@@ -5,17 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCurrency } from "@/context/CurrencyContext";
 import { toast } from "@/components/ui/use-toast";
-import { useMemo, useState } from "react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useMemo, useState, useEffect } from "react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip as ReTooltip } from "recharts";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 // Types
-interface Expense {
+interface Transaction {
   id: string;
-  date: string; // YYYY-MM-DD
-  amountINR: number; // store in INR internally
+  user_id: string;
+  amount: number;
+  transaction_date: string;
+  transaction_type: string;
   category: string;
-  note?: string;
+  description?: string;
 }
 
 const CATEGORIES = [
@@ -34,11 +37,13 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 
 export default function Tracker() {
   const { currency, rates, convert, format } = useCurrency();
+  const { user } = useAuth();
   const rate = rates[currency.code] ?? 1; // INR -> selected
 
-  // Persistent state
-  const [expenses, setExpenses] = useLocalStorage<Expense[]>("mm.expenses", []);
-  const [dailyLimitINR, setDailyLimitINR] = useLocalStorage<number>("mm.dailyLimitINR", 0);
+  // State
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dailyLimitINR, setDailyLimitINR] = useState<number>(0);
 
   // Form state
   const [amount, setAmount] = useState<string>(""); // entered in selected currency
@@ -46,37 +51,87 @@ export default function Tracker() {
   const [note, setNote] = useState<string>("");
   const [date, setDate] = useState<string>(todayStr());
 
+  useEffect(() => {
+    if (user) {
+      fetchTransactions();
+    }
+  }, [user]);
+
+  const fetchTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('transaction_type', 'expense')
+        .order('transaction_date', { ascending: false });
+
+      if (error) throw error;
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toINR = (valueInCurrent: number) => (rate ? valueInCurrent / rate : valueInCurrent);
 
-  const addExpense = () => {
+  const addExpense = async () => {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) {
       toast({ title: "Enter a valid amount" });
       return;
     }
-    const exp: Expense = {
-      id: (globalThis.crypto?.randomUUID?.() ?? String(Date.now())) as string,
-      date,
-      amountINR: Math.round(toINR(amt)),
-      category,
-      note: note?.trim() || undefined,
-    };
-    setExpenses((prev) => [exp, ...prev]);
-    setAmount("");
-    setNote("");
-    setDate(todayStr());
-    toast({ title: "Expense added", description: `${category}${exp.note ? ` • ${exp.note}` : ""}` });
+
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: user?.id,
+          amount: Math.round(toINR(amt)),
+          transaction_date: date,
+          transaction_type: 'expense',
+          category,
+          description: note?.trim() || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setTransactions((prev) => [data, ...prev]);
+      setAmount("");
+      setNote("");
+      setDate(todayStr());
+      toast({ title: "Expense added", description: `${category}${note ? ` • ${note}` : ""}` });
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      toast({ title: "Error adding expense", variant: "destructive" });
+    }
   };
 
-  const deleteExpense = (id: string) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
-    toast({ title: "Entry deleted" });
+  const deleteExpense = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      toast({ title: "Entry deleted" });
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast({ title: "Error deleting expense", variant: "destructive" });
+    }
   };
 
   // Aggregations
   const todaysTotalINR = useMemo(() =>
-    expenses.filter((e) => e.date === todayStr()).reduce((s, e) => s + e.amountINR, 0),
-  [expenses]);
+    transactions.filter((t) => t.transaction_date === todayStr()).reduce((s, t) => s + t.amount, 0),
+  [transactions]);
 
   const weekData = useMemo(() => {
     const arr: { label: string; date: string; totalINR: number }[] = [];
@@ -85,12 +140,12 @@ export default function Tracker() {
       const d = new Date(start);
       d.setDate(start.getDate() - i);
       const key = d.toISOString().slice(0, 10);
-      const total = expenses.filter((e) => e.date === key).reduce((s, e) => s + e.amountINR, 0);
+      const total = transactions.filter((t) => t.transaction_date === key).reduce((s, t) => s + t.amount, 0);
       const label = d.toLocaleDateString(undefined, { weekday: "short" });
       arr.push({ label, date: key, totalINR: total });
     }
     return arr;
-  }, [expenses]);
+  }, [transactions]);
 
   const streakDays = useMemo(() => {
     if (!dailyLimitINR || dailyLimitINR <= 0) return 0;
@@ -100,7 +155,7 @@ export default function Tracker() {
       const d = new Date(start);
       d.setDate(start.getDate() - i);
       const key = d.toISOString().slice(0, 10);
-      const total = expenses.filter((e) => e.date === key).reduce((s, e) => s + e.amountINR, 0);
+      const total = transactions.filter((t) => t.transaction_date === key).reduce((s, t) => s + t.amount, 0);
       if (total <= dailyLimitINR) {
         streak += 1;
       } else {
@@ -108,7 +163,7 @@ export default function Tracker() {
       }
     }
     return streak;
-  }, [expenses, dailyLimitINR]);
+  }, [transactions, dailyLimitINR]);
 
   const todaysTotalFormatted = format(todaysTotalINR);
   const dailyLimitFormatted = dailyLimitINR > 0 ? format(dailyLimitINR) : "Set a limit";
@@ -215,19 +270,21 @@ export default function Tracker() {
               <CardDescription>{new Date().toLocaleDateString()}</CardDescription>
             </CardHeader>
             <CardContent>
-              {expenses.filter((e) => e.date === todayStr()).length === 0 ? (
+              {loading ? (
+                <p className="text-sm text-muted-foreground">Loading expenses...</p>
+              ) : transactions.filter((t) => t.transaction_date === todayStr()).length === 0 ? (
                 <p className="text-sm text-muted-foreground">No entries yet. Add your first expense above.</p>
               ) : (
                 <ul className="space-y-3">
-                  {expenses.filter((e) => e.date === todayStr()).map((e) => (
-                    <li key={e.id} className="flex items-center justify-between rounded-md border border-border p-3">
+                  {transactions.filter((t) => t.transaction_date === todayStr()).map((t) => (
+                    <li key={t.id} className="flex items-center justify-between rounded-md border border-border p-3">
                       <div>
-                        <div className="font-medium">{e.category}{e.note ? ` • ${e.note}` : ""}</div>
-                        <div className="text-xs text-muted-foreground">{e.date}</div>
+                        <div className="font-medium">{t.category}{t.description ? ` • ${t.description}` : ""}</div>
+                        <div className="text-xs text-muted-foreground">{t.transaction_date}</div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="font-semibold">{format(e.amountINR)}</div>
-                        <Button variant="outline" onClick={() => deleteExpense(e.id)} aria-label="Delete">Delete</Button>
+                        <div className="font-semibold">{format(t.amount)}</div>
+                        <Button variant="outline" onClick={() => deleteExpense(t.id)} aria-label="Delete">Delete</Button>
                       </div>
                     </li>
                   ))}
