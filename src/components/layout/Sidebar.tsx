@@ -89,15 +89,15 @@ export default function Sidebar() {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-300 ease-in-out transform hover:scale-105",
                     isActive
-                      ? "bg-green-100 text-green-900 border-r-2 border-green-600"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-green-100 text-green-900 border-r-2 border-green-600 shadow-sm"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm"
                   )}
                 >
                   <item.icon
                     className={cn(
-                      "mr-3 h-5 w-5 flex-shrink-0",
+                      "mr-3 h-5 w-5 flex-shrink-0 transition-all duration-300 ease-in-out group-hover:scale-110",
                       isActive ? "text-green-600" : "text-gray-400"
                     )}
                   />

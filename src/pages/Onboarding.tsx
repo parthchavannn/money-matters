@@ -185,7 +185,7 @@ export default function Onboarding() {
                   <Input
                     id="monthlyIncome"
                     type="number"
-                    placeholder="₹ 70000"
+                    placeholder="Enter your monthly income"
                     value={userData.income.monthlyIncome || ''}
                     onChange={(e) => updateIncome({ monthlyIncome: Number(e.target.value) })}
                     className="mt-1"
@@ -196,7 +196,7 @@ export default function Onboarding() {
                   <Input
                     id="familyIncome"
                     type="number"
-                    placeholder="₹ 80000"
+                    placeholder="Enter family income (optional)"
                     value={userData.income.familyMonthlyIncome || ''}
                     onChange={(e) => updateIncome({ familyMonthlyIncome: Number(e.target.value) })}
                     className="mt-1"
@@ -209,7 +209,7 @@ export default function Onboarding() {
                   <Input
                     id="savings"
                     type="number"
-                    placeholder="₹ 150000"
+                    placeholder="Enter current savings"
                     value={userData.income.currentSavings || ''}
                     onChange={(e) => updateIncome({ currentSavings: Number(e.target.value) })}
                     className="mt-1"
@@ -220,7 +220,7 @@ export default function Onboarding() {
                   <Input
                     id="investments"
                     type="number"
-                    placeholder="₹ 100000"
+                    placeholder="Enter current investments"
                     value={userData.income.currentInvestments || ''}
                     onChange={(e) => updateIncome({ currentInvestments: Number(e.target.value) })}
                     className="mt-1"
@@ -249,7 +249,7 @@ export default function Onboarding() {
                     <Input
                       id="rent"
                       type="number"
-                      placeholder="₹"
+                      placeholder="Enter rent amount"
                       value={userData.expenses.rent || ''}
                       onChange={(e) => updateExpenses({ rent: Number(e.target.value) })}
                       className="mt-1"
@@ -260,7 +260,7 @@ export default function Onboarding() {
                     <Input
                       id="transport"
                       type="number"
-                      placeholder="₹ 1000"
+                      placeholder="Enter transport cost"
                       value={userData.expenses.transport || ''}
                       onChange={(e) => updateExpenses({ transport: Number(e.target.value) })}
                       className="mt-1"

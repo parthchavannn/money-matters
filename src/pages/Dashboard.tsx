@@ -168,62 +168,50 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Monthly Budget Progress */}
-          <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-            <div className="flex items-center space-x-2 mb-6">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span className="text-blue-600">📊</span>
+            {/* Monthly Budget Progress */}
+            <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
+              <div className="flex items-center space-x-2 mb-6">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-blue-600">📊</span>
+                </div>
+                <h3 className="text-lg font-semibold">Monthly Budget Progress</h3>
               </div>
-              <h3 className="text-lg font-semibold">Monthly Budget Progress</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Transport</span>
-                  <span className="text-red-500 text-sm font-medium">120%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-red-500">₹1,200</span>
-                  <span className="text-gray-500">₹1,000</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-red-500 h-2 rounded-full" style={{ width: "100%" }}></div>
-                </div>
-                <div className="text-red-500 text-xs">₹0 remaining</div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Food & Dining</span>
-                  <span className="text-green-500 text-sm font-medium">2%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-900">₹300</span>
-                  <span className="text-gray-500">₹15,750</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: "2%" }}></div>
-                </div>
-                <div className="text-green-500 text-xs">₹15,450 remaining</div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Groceries</span>
-                  <span className="text-green-500 text-sm font-medium">0%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-900">₹0</span>
-                  <span className="text-gray-500">₹6,000</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: "0%" }}></div>
-                </div>
-                <div className="text-green-500 text-xs">₹6,000 remaining</div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {expenseCategories.map((category, index) => {
+                  const budget = category.value;
+                  const spent = 0; // Could be linked to transactions later
+                  const percentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
+                  const remaining = budget - spent;
+                  
+                  return (
+                    <div key={index} className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">{category.name}</span>
+                        <span className={`text-sm font-medium ${percentage > 80 ? 'text-red-500' : 'text-green-500'}`}>
+                          {percentage}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className={percentage > 100 ? 'text-red-500' : 'text-gray-900'}>
+                          {format(spent)}
+                        </span>
+                        <span className="text-gray-500">{format(budget)}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full ${percentage > 100 ? 'bg-red-500' : 'bg-green-500'}`} 
+                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                        ></div>
+                      </div>
+                      <div className={`text-xs ${remaining >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {format(Math.abs(remaining))} {remaining >= 0 ? 'remaining' : 'over budget'}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* AI Financial Insights */}
@@ -241,9 +229,13 @@ export default function Dashboard() {
                   <span className="font-medium">Smart Recommendation</span>
                 </div>
                 <p className="text-gray-700 text-sm mb-3">
-                  Great! You have ₹81,500 available for your goals this month. Consider allocating 60% to high-priority goals and 40% to emergency savings.
+                  {availableForGoals > 0 
+                    ? `Great! You have ${format(availableForGoals)} available for your goals this month. Consider allocating 60% to high-priority goals and 40% to emergency savings.`
+                    : "Consider reviewing your expenses to create more room for your financial goals."
+                  }
                 </p>
-                <button className="bg-orange-500 text-white px-4 py-2 rounded-md text-sm hover:bg-orange-600 transition-colors">
+                <button className="bg-orange-500 text-white px-4 py-2 rounded-md text-sm hover:bg-orange-600 transition-colors"
+                  onClick={() => navigate('/budget-planner')}>
                   Optimize Budget →
                 </button>
               </div>

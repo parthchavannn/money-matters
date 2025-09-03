@@ -4,9 +4,45 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TrendingUp, TrendingDown, BarChart3, Plus, RefreshCw } from "lucide-react";
 import { useCurrency } from "@/context/CurrencyContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserData } from "@/context/UserDataContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 export default function Investments() {
   const { format } = useCurrency();
+  const { user } = useAuth();
+  const { userData } = useUserData();
+  const [investments, setInvestments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchInvestments();
+    }
+  }, [user]);
+
+  const fetchInvestments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('investments')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setInvestments(data || []);
+    } catch (error) {
+      console.error('Error fetching investments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalInvested = investments.reduce((sum: number, inv: any) => sum + Number(inv.invested || 0), 0);
+  const currentValue = investments.reduce((sum: number, inv: any) => sum + Number(inv.current_value || inv.invested || 0), 0);
+  const pnl = currentValue - totalInvested;
+  const availableToInvest = Math.max(0, (userData.income?.monthlyIncome || 0) - Object.values(userData.expenses || {}).reduce((s, v) => s + (v || 0), 0));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -38,7 +74,7 @@ export default function Investments() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{format(0)}</div>
+                <div className="text-2xl font-bold">{format(totalInvested)}</div>
               </CardContent>
             </Card>
 
@@ -50,7 +86,7 @@ export default function Investments() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{format(0)}</div>
+                <div className="text-2xl font-bold">{format(currentValue)}</div>
               </CardContent>
             </Card>
 
@@ -62,7 +98,9 @@ export default function Investments() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{format(0)}</div>
+                <div className={`text-2xl font-bold ${pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {pnl >= 0 ? '+' : ''}{format(pnl)}
+                </div>
               </CardContent>
             </Card>
 
@@ -74,7 +112,7 @@ export default function Investments() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{format(50500)}</div>
+                <div className="text-2xl font-bold text-blue-600">{format(availableToInvest)}</div>
                 <div className="text-xs text-blue-500 mt-1">From this month's budget surplus</div>
               </CardContent>
             </Card>
@@ -98,11 +136,38 @@ export default function Investments() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                      No investments logged yet.
-                    </TableCell>
-                  </TableRow>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        Loading investments...
+                      </TableCell>
+                    </TableRow>
+                  ) : investments.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        No investments logged yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    investments.map((investment: any) => {
+                      const investmentPnl = (investment.current_value || investment.invested) - investment.invested;
+                      return (
+                        <TableRow key={investment.id}>
+                          <TableCell>{investment.name}</TableCell>
+                          <TableCell>{investment.type}</TableCell>
+                          <TableCell>{new Date(investment.invested_date).toLocaleDateString()}</TableCell>
+                          <TableCell>{format(investment.invested)}</TableCell>
+                          <TableCell>{format(investment.current_value || investment.invested)}</TableCell>
+                          <TableCell className={investmentPnl >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            {investmentPnl >= 0 ? '+' : ''}{format(investmentPnl)}
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="sm">Edit</Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

@@ -6,36 +6,65 @@ import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Tooltip } from "recharts";
 import { TrendingUp, TrendingDown, AlertTriangle, DollarSign, Edit, Trash2 } from "lucide-react";
 import { useCurrency } from "@/context/CurrencyContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserData } from "@/context/UserDataContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 export default function Analytics() {
   const { format } = useCurrency();
+  const { user } = useAuth();
+  const { userData } = useUserData();
+  const [transactions, setTransactions] = useState([]);
+  const [debts, setDebts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+
+  const loadData = async () => {
+    try {
+      const [transactionsRes, debtsRes] = await Promise.all([
+        supabase.from('transactions').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
+        supabase.from('debts').select('*').eq('user_id', user?.id).eq('status', 'active')
+      ]);
+
+      setTransactions(transactionsRes.data || []);
+      setDebts(debtsRes.data || []);
+    } catch (error) {
+      console.error('Error loading analytics data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate real metrics
+  const monthlyIncome = userData.income?.monthlyIncome || 0;
+  const totalExpenses = Object.values(userData.expenses || {}).reduce((s, v) => s + (v || 0), 0);
+  const currentSavings = userData.income?.currentSavings || 0;
+  const currentInvestments = userData.income?.currentInvestments || 0;
+  const totalDebt = debts.reduce((sum, debt) => sum + Number(debt.remaining_amount || 0), 0);
+  const monthlySavings = monthlyIncome - totalExpenses;
+  const netWorth = currentSavings + currentInvestments - totalDebt;
+
+  // Chart data
   const incomeExpenseData = [
-    { month: "Aug", income: 158000, expenses: 78500 }
+    { month: "Aug", income: monthlyIncome, expenses: totalExpenses }
   ];
 
   const spendingData = [
-    { name: "Other", value: 35, color: "#8BC34A" },
-    { name: "Debt/EMIs", value: 22, color: "#4CAF50" },
-    { name: "Food", value: 20, color: "#2196F3" },
-    { name: "Groceries", value: 8, color: "#FF9800" },
-    { name: "Utilities", value: 8, color: "#FFC107" },
-    { name: "Transport", value: 7, color: "#F44336" }
-  ];
+    { name: "Rent", value: Math.round((userData.expenses?.rent || 0) / totalExpenses * 100), color: "#8BC34A" },
+    { name: "Groceries", value: Math.round((userData.expenses?.groceries || 0) / totalExpenses * 100), color: "#4CAF50" },
+    { name: "Transport", value: Math.round((userData.expenses?.transport || 0) / totalExpenses * 100), color: "#2196F3" },
+    { name: "Utilities", value: Math.round((userData.expenses?.utilities || 0) / totalExpenses * 100), color: "#FF9800" },
+    { name: "Other", value: Math.round((userData.expenses?.other || 0) / totalExpenses * 100), color: "#F44336" }
+  ].filter(item => item.value > 0);
 
   const netWorthData = [
-    { month: "Jan", value: 195000 },
-    { month: "Feb", value: 205000 },
-    { month: "Mar", value: 215000 },
-    { month: "Apr", value: 225000 },
-    { month: "May", value: 235000 },
-    { month: "Jun", value: 245000 },
-    { month: "Jul", value: 250000 },
-    { month: "Aug", value: 260000 }
-  ];
-
-  const transactions = [
-    { date: "Aug 15, 2025", category: "Food", description: "Zomato", amount: 200 }
+    { month: "This Month", value: netWorth }
   ];
 
   return (
@@ -54,7 +83,7 @@ export default function Analytics() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-red-600 text-white">
+            <Card className={`${netWorth >= 0 ? 'bg-green-600' : 'bg-red-600'} text-white`}>
               <CardHeader className="pb-2">
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="w-5 h-5" />
@@ -62,7 +91,7 @@ export default function Analytics() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">-{format(225000)}</div>
+                <div className="text-2xl font-bold">{format(netWorth)}</div>
               </CardContent>
             </Card>
 
@@ -70,11 +99,11 @@ export default function Analytics() {
               <CardHeader className="pb-2">
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="w-5 h-5" />
-                  <CardTitle className="text-sm">Avg Monthly Savings</CardTitle>
+                  <CardTitle className="text-sm">Monthly Savings</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{format(29000)}</div>
+                <div className="text-2xl font-bold">{format(Math.max(0, monthlySavings))}</div>
               </CardContent>
             </Card>
 
@@ -82,11 +111,11 @@ export default function Analytics() {
               <CardHeader className="pb-2">
                 <div className="flex items-center space-x-2">
                   <TrendingDown className="w-5 h-5" />
-                  <CardTitle className="text-sm">Avg Monthly Spending</CardTitle>
+                  <CardTitle className="text-sm">Monthly Expenses</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{format(78500)}</div>
+                <div className="text-2xl font-bold">{format(totalExpenses)}</div>
               </CardContent>
             </Card>
 
@@ -98,7 +127,7 @@ export default function Analytics() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{format(475000)}</div>
+                <div className="text-2xl font-bold">{format(totalDebt)}</div>
               </CardContent>
             </Card>
           </div>
@@ -199,26 +228,40 @@ export default function Analytics() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactions.map((transaction, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{transaction.date}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{transaction.category}</Badge>
-                      </TableCell>
-                      <TableCell>{transaction.description}</TableCell>
-                      <TableCell>{format(transaction.amount)}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        Loading transactions...
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : transactions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        No transactions found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    transactions.map((transaction: any, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{new Date(transaction.transaction_date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{transaction.category}</Badge>
+                        </TableCell>
+                        <TableCell>{transaction.description || 'No description'}</TableCell>
+                        <TableCell>{format(transaction.amount)}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button variant="ghost" size="sm">
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
