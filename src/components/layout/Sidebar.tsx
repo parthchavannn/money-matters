@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -13,6 +13,10 @@ import {
   Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserData } from "@/context/UserDataContext";
+import { supabase } from "@/integrations/supabase/client";
+import { computeFinancialScore } from "@/utils/financial";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -26,6 +30,37 @@ const navigation = [
 
 export default function Sidebar() {
   const { pathname } = useLocation();
+  const { user } = useAuth();
+  const { userData } = useUserData();
+  const [activeGoals, setActiveGoals] = useState(0);
+  const [score, setScore] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const { data: goals } = await supabase
+          .from('goals')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        const { data: debts } = await supabase
+          .from('debts')
+          .select('remaining_amount, monthly_payment')
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        const totalDebt = (debts || []).reduce((s: number, d: any) => s + Number(d.remaining_amount || 0), 0);
+        const monthlyDebt = (debts || []).reduce((s: number, d: any) => s + Number(d.monthly_payment || 0), 0);
+
+        setActiveGoals(goals?.length || 0);
+        setScore(computeFinancialScore(userData as any, totalDebt, monthlyDebt));
+      } catch (e) {
+        console.error('Sidebar insights error:', e);
+      }
+    })();
+  }, [user, userData]);
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
@@ -79,17 +114,17 @@ export default function Sidebar() {
             <div className="px-3 py-2">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">Financial Score</span>
-                <span className="text-sm font-medium text-green-600">85/100</span>
+                <span className="text-sm font-medium text-green-600">{score}/100</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-600 h-2 rounded-full" style={{ width: "85%" }}></div>
+                <div className="bg-green-600 h-2 rounded-full" style={{ width: `${score}%` }}></div>
               </div>
             </div>
             
             <div className="px-3 py-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-gray-600">Active Goals</span>
-                <span className="text-sm font-medium">3</span>
+                <span className="text-sm font-medium">{activeGoals}</span>
               </div>
             </div>
 
