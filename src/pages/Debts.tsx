@@ -61,6 +61,9 @@ export default function Debts() {
     }
   };
 
+  const totalDebt = debts.reduce((sum, debt) => sum + debt.remaining_amount, 0);
+  const totalMonthlyPayments = debts.reduce((sum, debt) => sum + (debt.monthly_payment || 0), 0);
+
   const handleCreateDebt = async () => {
     if (!user) return;
     try {
