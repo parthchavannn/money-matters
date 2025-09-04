@@ -7,7 +7,10 @@ import { useCurrency } from "@/context/CurrencyContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
 interface Debt {
   id: string;
   creditor_name: string;
@@ -25,7 +28,16 @@ export default function Debts() {
   const { user } = useAuth();
   const [debts, setDebts] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [debtDialogOpen, setDebtDialogOpen] = useState(false);
+  const [newDebt, setNewDebt] = useState({
+    creditor_name: '',
+    debt_type: 'Loan',
+    total_amount: 0,
+    remaining_amount: 0,
+    monthly_payment: 0,
+    interest_rate: 0,
+    due_date: ''
+  });
   useEffect(() => {
     if (user) {
       fetchDebts();
@@ -49,9 +61,34 @@ export default function Debts() {
     }
   };
 
-  const totalDebt = debts.reduce((sum, debt) => sum + debt.remaining_amount, 0);
-  const totalMonthlyPayments = debts.reduce((sum, debt) => sum + (debt.monthly_payment || 0), 0);
-
+  const handleCreateDebt = async () => {
+    if (!user) return;
+    try {
+      const { error, data } = await supabase
+        .from('debts')
+        .insert({
+          user_id: user.id,
+          creditor_name: newDebt.creditor_name.trim(),
+          debt_type: newDebt.debt_type,
+          total_amount: Number(newDebt.total_amount) || 0,
+          remaining_amount: Number(newDebt.remaining_amount) || 0,
+          monthly_payment: Number(newDebt.monthly_payment) || null,
+          interest_rate: Number(newDebt.interest_rate) || null,
+          due_date: newDebt.due_date || null,
+          status: 'active'
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      setDebts((prev) => [data as any, ...prev]);
+      setDebtDialogOpen(false);
+      setNewDebt({ creditor_name: '', debt_type: 'Loan', total_amount: 0, remaining_amount: 0, monthly_payment: 0, interest_rate: 0, due_date: '' });
+      toast({ title: 'Debt added' });
+    } catch (e) {
+      console.error('Error creating debt:', e);
+      toast({ title: 'Failed to add debt', variant: 'destructive' });
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-50">
       <Helmet>
@@ -67,11 +104,59 @@ export default function Debts() {
               <h1 className="text-2xl font-bold text-gray-900">Debts & EMIs</h1>
               <p className="text-gray-600">Manage and track your debt payments</p>
             </div>
-            <Button className="bg-red-600 hover:bg-red-700">
+            <Button className="bg-red-600 hover:bg-red-700" onClick={() => setDebtDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Debt/EMI
             </Button>
           </div>
+
+          <Dialog open={debtDialogOpen} onOpenChange={setDebtDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Debt/EMI</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-3">
+                <div>
+                  <Label>Creditor Name</Label>
+                  <Input value={newDebt.creditor_name} onChange={(e) => setNewDebt({ ...newDebt, creditor_name: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Type</Label>
+                    <Input value={newDebt.debt_type} onChange={(e) => setNewDebt({ ...newDebt, debt_type: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Interest %</Label>
+                    <Input type="number" value={newDebt.interest_rate} onChange={(e) => setNewDebt({ ...newDebt, interest_rate: Number(e.target.value) })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Total Amount</Label>
+                    <Input type="number" value={newDebt.total_amount} onChange={(e) => setNewDebt({ ...newDebt, total_amount: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label>Remaining</Label>
+                    <Input type="number" value={newDebt.remaining_amount} onChange={(e) => setNewDebt({ ...newDebt, remaining_amount: Number(e.target.value) })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Monthly Payment</Label>
+                    <Input type="number" value={newDebt.monthly_payment} onChange={(e) => setNewDebt({ ...newDebt, monthly_payment: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label>Due Date</Label>
+                    <Input type="date" value={newDebt.due_date} onChange={(e) => setNewDebt({ ...newDebt, due_date: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDebtDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreateDebt}>Add</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card className="bg-red-600 text-white">

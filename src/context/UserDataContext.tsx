@@ -170,8 +170,7 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       const { error } = await supabase
         .from('profiles')
-        .upsert(profileData);
-
+        .upsert(profileData, { onConflict: 'user_id' });
       if (error) {
         console.error('Error saving user data:', error);
       }

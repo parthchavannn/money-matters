@@ -161,7 +161,7 @@ export default function Dashboard() {
                 </select>
               </div>
               <div className="flex items-end">
-                <button className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-md hover:from-orange-600 hover:to-red-600 transition-colors">
+                <button onClick={() => navigate('/tracker')} className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-md hover:from-orange-600 hover:to-red-600 transition-colors">
                   + Log Expense
                 </button>
               </div>

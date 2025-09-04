@@ -284,7 +284,7 @@ export default function Onboarding() {
                     <Input
                       id="groceries"
                       type="number"
-                      placeholder="₹ 6000"
+                      placeholder="₹ 0"
                       value={userData.expenses.groceries || ''}
                       onChange={(e) => updateExpenses({ groceries: Number(e.target.value) })}
                       className="mt-1"
@@ -319,7 +319,7 @@ export default function Onboarding() {
                     <Input
                       id="utilities"
                       type="number"
-                      placeholder="₹ 4000"
+                      placeholder="₹ 0"
                       value={userData.expenses.utilities || ''}
                       onChange={(e) => updateExpenses({ utilities: Number(e.target.value) })}
                       className="mt-1"
@@ -366,7 +366,7 @@ export default function Onboarding() {
                   <Input
                     id="other"
                     type="number"
-                    placeholder="₹ 40000"
+                    placeholder="₹ 0"
                     value={userData.expenses.other || ''}
                     onChange={(e) => updateExpenses({ other: Number(e.target.value) })}
                     className="mt-1"

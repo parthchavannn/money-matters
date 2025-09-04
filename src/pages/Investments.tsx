@@ -8,14 +8,25 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserData } from "@/context/UserDataContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
 export default function Investments() {
   const { format } = useCurrency();
   const { user } = useAuth();
   const { userData } = useUserData();
   const [investments, setInvestments] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [invDialogOpen, setInvDialogOpen] = useState(false);
+  const [newInv, setNewInv] = useState({
+    name: '',
+    type: 'Stock',
+    invested_date: new Date().toISOString().slice(0,10),
+    invested: 0,
+    current_value: 0,
+  });
   useEffect(() => {
     if (user) {
       fetchInvestments();
@@ -39,6 +50,32 @@ export default function Investments() {
     }
   };
 
+  const handleCreateInvestment = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('investments')
+        .insert({
+          user_id: user.id,
+          name: newInv.name.trim(),
+          type: newInv.type,
+          invested_date: newInv.invested_date,
+          invested: Number(newInv.invested) || 0,
+          current_value: Number(newInv.current_value) || null,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      setInvestments((prev) => [data as any, ...prev]);
+      setInvDialogOpen(false);
+      setNewInv({ name: '', type: 'Stock', invested_date: new Date().toISOString().slice(0,10), invested: 0, current_value: 0 });
+      toast({ title: 'Investment logged' });
+    } catch (e) {
+      console.error('Error adding investment:', e);
+      toast({ title: 'Failed to add investment', variant: 'destructive' });
+    }
+  };
+
   const totalInvested = investments.reduce((sum: number, inv: any) => sum + Number(inv.invested || 0), 0);
   const currentValue = investments.reduce((sum: number, inv: any) => sum + Number(inv.current_value || inv.invested || 0), 0);
   const pnl = currentValue - totalInvested;
@@ -59,11 +96,58 @@ export default function Investments() {
               <h1 className="text-2xl font-bold text-gray-900">Your Investments</h1>
               <p className="text-gray-600">Track your portfolio and watch your wealth grow.</p>
             </div>
-            <Button className="bg-black hover:bg-gray-800">
+            <Button className="bg-black hover:bg-gray-800" onClick={() => setInvDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Log Investment
             </Button>
           </div>
+
+          <Dialog open={invDialogOpen} onOpenChange={setInvDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Log Investment</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-3">
+                <div>
+                  <Label>Name</Label>
+                  <Input value={newInv.name} onChange={(e) => setNewInv({ ...newInv, name: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Type</Label>
+                    <Select value={newInv.type} onValueChange={(v) => setNewInv({ ...newInv, type: v })}>
+                      <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Stock">Stock</SelectItem>
+                        <SelectItem value="Mutual Fund">Mutual Fund</SelectItem>
+                        <SelectItem value="Crypto">Crypto</SelectItem>
+                        <SelectItem value="Bond">Bond</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Date</Label>
+                    <Input type="date" value={newInv.invested_date} onChange={(e) => setNewInv({ ...newInv, invested_date: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Invested</Label>
+                    <Input type="number" value={newInv.invested} onChange={(e) => setNewInv({ ...newInv, invested: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label>Current Value</Label>
+                    <Input type="number" value={newInv.current_value} onChange={(e) => setNewInv({ ...newInv, current_value: Number(e.target.value) })} />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setInvDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreateInvestment}>Add</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card>

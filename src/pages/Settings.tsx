@@ -298,7 +298,7 @@ export default function Settings() {
                         type="number"
                         value={userData.expenses.transport || ''}
                         onChange={(e) => updateExpenses({ transport: Number(e.target.value) })}
-                        placeholder="1000"
+                        placeholder="0"
                         className="mt-1" 
                       />
                     </div>
@@ -322,7 +322,7 @@ export default function Settings() {
                         type="number"
                         value={userData.expenses.groceries || ''}
                         onChange={(e) => updateExpenses({ groceries: Number(e.target.value) })}
-                        placeholder="6000"
+                        placeholder="0"
                         className="mt-1" 
                       />
                     </div>
@@ -357,7 +357,7 @@ export default function Settings() {
                         type="number"
                         value={userData.expenses.utilities || ''}
                         onChange={(e) => updateExpenses({ utilities: Number(e.target.value) })}
-                        placeholder="4000"
+                        placeholder="0"
                         className="mt-1" 
                       />
                     </div>
@@ -404,7 +404,7 @@ export default function Settings() {
                       type="number"
                       value={userData.expenses.other || ''}
                       onChange={(e) => updateExpenses({ other: Number(e.target.value) })}
-                      placeholder="40000"
+                      placeholder="0"
                       className="mt-1" 
                     />
                   </div>
