@@ -1,16 +1,17 @@
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Calendar, TrendingDown, Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, CreditCard, TrendingDown, AlertTriangle, Edit, Trash2 } from "lucide-react";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "@/components/ui/use-toast";
+
 interface Debt {
   id: string;
   creditor_name: string;
@@ -28,16 +29,18 @@ export default function Debts() {
   const { user } = useAuth();
   const [debts, setDebts] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(true);
-  const [debtDialogOpen, setDebtDialogOpen] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
   const [newDebt, setNewDebt] = useState({
     creditor_name: '',
-    debt_type: 'Loan',
-    total_amount: 0,
-    remaining_amount: 0,
-    monthly_payment: 0,
-    interest_rate: 0,
+    debt_type: '',
+    total_amount: '',
+    remaining_amount: '',
+    monthly_payment: '',
+    interest_rate: '',
     due_date: ''
   });
+
   useEffect(() => {
     if (user) {
       fetchDebts();
@@ -66,32 +69,95 @@ export default function Debts() {
 
   const handleCreateDebt = async () => {
     if (!user) return;
-    try {
-      const { error, data } = await supabase
+
+    const debtData = {
+      user_id: user.id,
+      creditor_name: newDebt.creditor_name,
+      debt_type: newDebt.debt_type,
+      total_amount: parseFloat(newDebt.total_amount),
+      remaining_amount: parseFloat(newDebt.remaining_amount),
+      monthly_payment: parseFloat(newDebt.monthly_payment) || null,
+      interest_rate: parseFloat(newDebt.interest_rate) || null,
+      due_date: newDebt.due_date || null,
+      status: 'active'
+    };
+
+    if (editingDebt) {
+      const { data, error } = await supabase
         .from('debts')
-        .insert({
-          user_id: user.id,
-          creditor_name: newDebt.creditor_name.trim(),
-          debt_type: newDebt.debt_type,
-          total_amount: Number(newDebt.total_amount) || 0,
-          remaining_amount: Number(newDebt.remaining_amount) || 0,
-          monthly_payment: Number(newDebt.monthly_payment) || null,
-          interest_rate: Number(newDebt.interest_rate) || null,
-          due_date: newDebt.due_date || null,
-          status: 'active'
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      setDebts((prev) => [data as any, ...prev]);
-      setDebtDialogOpen(false);
-      setNewDebt({ creditor_name: '', debt_type: 'Loan', total_amount: 0, remaining_amount: 0, monthly_payment: 0, interest_rate: 0, due_date: '' });
-      toast({ title: 'Debt added' });
-    } catch (e) {
-      console.error('Error creating debt:', e);
-      toast({ title: 'Failed to add debt', variant: 'destructive' });
+        .update(debtData)
+        .eq('id', editingDebt.id)
+        .select();
+
+      if (error) {
+        console.error('Error updating debt:', error);
+        return;
+      }
+
+      if (data) {
+        setDebts(debts.map(d => d.id === editingDebt.id ? data[0] : d));
+        resetForm();
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('debts')
+        .insert([debtData])
+        .select();
+
+      if (error) {
+        console.error('Error creating debt:', error);
+        return;
+      }
+
+      if (data) {
+        setDebts([...debts, data[0]]);
+        resetForm();
+      }
     }
   };
+
+  const handleEditDebt = (debt: Debt) => {
+    setEditingDebt(debt);
+    setNewDebt({
+      creditor_name: debt.creditor_name,
+      debt_type: debt.debt_type,
+      total_amount: debt.total_amount.toString(),
+      remaining_amount: debt.remaining_amount.toString(),
+      monthly_payment: debt.monthly_payment?.toString() || '',
+      interest_rate: debt.interest_rate?.toString() || '',
+      due_date: debt.due_date || ''
+    });
+    setShowDialog(true);
+  };
+
+  const handleDeleteDebt = async (debtId: string) => {
+    const { error } = await supabase
+      .from('debts')
+      .delete()
+      .eq('id', debtId);
+
+    if (error) {
+      console.error('Error deleting debt:', error);
+      return;
+    }
+
+    setDebts(debts.filter(d => d.id !== debtId));
+  };
+
+  const resetForm = () => {
+    setNewDebt({
+      creditor_name: '',
+      debt_type: '',
+      total_amount: '',
+      remaining_amount: '',
+      monthly_payment: '',
+      interest_rate: '',
+      due_date: ''
+    });
+    setEditingDebt(null);
+    setShowDialog(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Helmet>
@@ -107,59 +173,121 @@ export default function Debts() {
               <h1 className="text-2xl font-bold text-gray-900">Debts & EMIs</h1>
               <p className="text-gray-600">Manage and track your debt payments</p>
             </div>
-            <Button className="bg-red-600 hover:bg-red-700" onClick={() => setDebtDialogOpen(true)}>
+            <Button className="bg-red-600 hover:bg-red-700" onClick={() => setShowDialog(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Debt/EMI
             </Button>
           </div>
 
-          <Dialog open={debtDialogOpen} onOpenChange={setDebtDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Debt/EMI</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-3">
-                <div>
-                  <Label>Creditor Name</Label>
-                  <Input value={newDebt.creditor_name} onChange={(e) => setNewDebt({ ...newDebt, creditor_name: e.target.value })} />
+        <Dialog open={showDialog} onOpenChange={(open) => { if (!open) resetForm(); }}>
+          <DialogContent className="sm:max-w-[500px]" aria-describedby="debt-dialog-description">
+            <DialogHeader>
+              <DialogTitle>{editingDebt ? 'Edit Debt' : 'Add New Debt'}</DialogTitle>
+              <DialogDescription id="debt-dialog-description">
+                {editingDebt ? 'Update your debt information below.' : 'Enter details for your new debt.'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="creditor_name">Creditor Name</Label>
+                <Input
+                  id="creditor_name"
+                  value={newDebt.creditor_name}
+                  onChange={(e) => setNewDebt({...newDebt, creditor_name: e.target.value})}
+                  placeholder="Bank, Credit Card, etc."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="debt_type">Debt Type</Label>
+                  <Select value={newDebt.debt_type} onValueChange={(value) => setNewDebt({...newDebt, debt_type: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="credit_card">Credit Card</SelectItem>
+                      <SelectItem value="personal_loan">Personal Loan</SelectItem>
+                      <SelectItem value="home_loan">Home Loan</SelectItem>
+                      <SelectItem value="car_loan">Car Loan</SelectItem>
+                      <SelectItem value="education_loan">Education Loan</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Type</Label>
-                    <Input value={newDebt.debt_type} onChange={(e) => setNewDebt({ ...newDebt, debt_type: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>Interest %</Label>
-                    <Input type="number" value={newDebt.interest_rate} onChange={(e) => setNewDebt({ ...newDebt, interest_rate: Number(e.target.value) })} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Total Amount</Label>
-                    <Input type="number" value={newDebt.total_amount} onChange={(e) => setNewDebt({ ...newDebt, total_amount: Number(e.target.value) })} />
-                  </div>
-                  <div>
-                    <Label>Remaining</Label>
-                    <Input type="number" value={newDebt.remaining_amount} onChange={(e) => setNewDebt({ ...newDebt, remaining_amount: Number(e.target.value) })} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Monthly Payment</Label>
-                    <Input type="number" value={newDebt.monthly_payment} onChange={(e) => setNewDebt({ ...newDebt, monthly_payment: Number(e.target.value) })} />
-                  </div>
-                  <div>
-                    <Label>Due Date</Label>
-                    <Input type="date" value={newDebt.due_date} onChange={(e) => setNewDebt({ ...newDebt, due_date: e.target.value })} />
-                  </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="interest_rate">Interest Rate (%)</Label>
+                  <Input
+                    id="interest_rate"
+                    type="number"
+                    step="0.01"
+                    value={newDebt.interest_rate}
+                    onChange={(e) => setNewDebt({...newDebt, interest_rate: e.target.value})}
+                    placeholder="12.5"
+                  />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setDebtDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreateDebt}>Add</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="total_amount">Total Amount</Label>
+                  <Input
+                    id="total_amount"
+                    type="number"
+                    value={newDebt.total_amount}
+                    onChange={(e) => setNewDebt({...newDebt, total_amount: e.target.value})}
+                    placeholder="100000"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="remaining_amount">Remaining Amount</Label>
+                  <Input
+                    id="remaining_amount"
+                    type="number"
+                    value={newDebt.remaining_amount}
+                    onChange={(e) => setNewDebt({...newDebt, remaining_amount: e.target.value})}
+                    placeholder="75000"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="monthly_payment">Monthly Payment</Label>
+                  <Input
+                    id="monthly_payment"
+                    type="number"
+                    value={newDebt.monthly_payment}
+                    onChange={(e) => setNewDebt({...newDebt, monthly_payment: e.target.value})}
+                    placeholder="5000"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="due_date">Due Date</Label>
+                  <Input
+                    id="due_date"
+                    type="date"
+                    value={newDebt.due_date}
+                    onChange={(e) => setNewDebt({...newDebt, due_date: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => resetForm()}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateDebt}>
+                {editingDebt ? 'Update Debt' : 'Add Debt'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card className="bg-red-600 text-white">
@@ -177,7 +305,7 @@ export default function Debts() {
             <Card className="bg-orange-600 text-white">
               <CardHeader className="pb-2">
                 <div className="flex items-center space-x-2">
-                  <Calendar className="w-5 h-5" />
+                  <CreditCard className="w-5 h-5" />
                   <CardTitle className="text-lg">Monthly Payments</CardTitle>
                 </div>
               </CardHeader>
@@ -209,7 +337,7 @@ export default function Debts() {
                   <AlertTriangle className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No debts found. Great job on staying debt-free!</p>
                 </div>
-                <Button className="bg-red-600 hover:bg-red-700">
+                <Button className="bg-red-600 hover:bg-red-700" onClick={() => setShowDialog(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Debt (if needed)
                 </Button>
@@ -230,10 +358,10 @@ export default function Debts() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditDebt(debt)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteDebt(debt.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
