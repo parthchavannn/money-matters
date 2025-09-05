@@ -17,11 +17,16 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [goals, setGoals] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [streakDays, setStreakDays] = useState(0);
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('🍔 Food & Dining');
+  const [note, setNote] = useState('');
 
   useEffect(() => {
     if (user) {
       loadUserGoals();
       loadRecentTransactions();
+      calculateStreak();
     }
   }, [user]);
 
@@ -54,6 +59,68 @@ export default function Dashboard() {
       setTransactions(data || []);
     } catch (error) {
       console.error('Error loading transactions:', error);
+    }
+  };
+
+  const calculateStreak = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('transaction_date')
+        .eq('user_id', user?.id)
+        .order('transaction_date', { ascending: false });
+
+      if (error) throw error;
+
+      let streak = 0;
+      const today = new Date();
+      const dates = data?.map(t => new Date(t.transaction_date)) || [];
+      
+      // Check for consecutive days with transactions
+      for (let i = 0; i < dates.length; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(today.getDate() - i);
+        
+        const hasTransaction = dates.some(date => 
+          date.toDateString() === checkDate.toDateString()
+        );
+        
+        if (hasTransaction) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      
+      setStreakDays(streak);
+    } catch (error) {
+      console.error('Error calculating streak:', error);
+    }
+  };
+
+  const logExpense = async () => {
+    if (!amount || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          amount: parseFloat(amount),
+          category: category.split(' ').slice(1).join(' '),
+          description: note || 'Budget tracker expense',
+          transaction_type: 'expense',
+          transaction_date: new Date().toISOString().split('T')[0]
+        });
+
+      if (error) throw error;
+      
+      setAmount('');
+      setNote('');
+      loadRecentTransactions();
+      calculateStreak();
+    } catch (error) {
+      console.error('Error logging expense:', error);
     }
   };
 
@@ -137,7 +204,7 @@ export default function Dashboard() {
                 </div>
                 <h3 className="text-lg font-semibold">Budget Tracker & Streak</h3>
               </div>
-              <div className="text-orange-600 text-2xl font-bold">0</div>
+              <div className="text-orange-600 text-2xl font-bold">{streakDays}</div>
             </div>
             <p className="text-gray-600 mb-4">Log any expense to maintain your streak!</p>
             
@@ -147,12 +214,18 @@ export default function Dashboard() {
                 <input 
                   type="number" 
                   placeholder="₹ 0.00" 
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Category</label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <select 
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
                   <option>🍔 Food & Dining</option>
                   <option>🛒 Groceries</option>
                   <option>🚗 Transport</option>
@@ -161,7 +234,10 @@ export default function Dashboard() {
                 </select>
               </div>
               <div className="flex items-end">
-                <button onClick={() => navigate('/tracker')} className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-md hover:from-orange-600 hover:to-red-600 transition-colors">
+                <button 
+                  onClick={logExpense}
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-md hover:from-orange-600 hover:to-red-600 transition-colors"
+                >
                   + Log Expense
                 </button>
               </div>

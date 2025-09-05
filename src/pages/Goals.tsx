@@ -342,7 +342,14 @@ export default function Goals() {
                         <div className="flex items-center space-x-3">
                           <div className="text-2xl">🎯</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
+                            <div className="flex items-center space-x-2">
+                              <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
+                              {progress >= 100 && (
+                                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-sm">✓</span>
+                                </div>
+                              )}
+                            </div>
                             <div className="flex items-center space-x-2 mt-1">
                               <Badge variant={goal.priority === "high" ? "destructive" : "secondary"}>
                                 {goal.priority} priority

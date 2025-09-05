@@ -5,13 +5,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DollarSign, RefreshCw, Save, AlertTriangle, Target, Lightbulb } from "lucide-react";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useUserData } from "@/context/UserDataContext";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function BudgetPlanner() {
   const { format } = useCurrency();
   const { userData } = useUserData();
+  const { user } = useAuth();
+  const [monthlySavings, setMonthlySavings] = useState(0);
+  const [emergencyFund, setEmergencyFund] = useState(0);
+  const [investmentAmount, setInvestmentAmount] = useState(0);
+  const [extraIncomeAmount, setExtraIncomeAmount] = useState('');
 
   const monthlyIncome = userData?.income?.monthlyIncome || 0;
   const totalExpenses = Object.values(userData?.expenses || {}).reduce((sum, val) => sum + (val || 0), 0);
@@ -54,6 +64,72 @@ export default function BudgetPlanner() {
     },
   ];
 
+  const handleLogExtraIncome = async () => {
+    if (!extraIncomeAmount || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          amount: parseFloat(extraIncomeAmount),
+          category: 'Extra Income',
+          description: 'Additional income logged',
+          transaction_type: 'income',
+          transaction_date: new Date().toISOString().split('T')[0]
+        });
+
+      if (error) throw error;
+      
+      setExtraIncomeAmount('');
+      toast.success('Extra income logged successfully!');
+    } catch (error) {
+      console.error('Error logging extra income:', error);
+      toast.error('Failed to log extra income');
+    }
+  };
+
+  const handleResetToAI = () => {
+    setMonthlySavings(suggestedSavings);
+    setEmergencyFund(suggestedEmergencyFund);
+    setInvestmentAmount(suggestedInvestment);
+    toast.success('Reset to AI suggestions');
+  };
+
+  const handleSaveBudget = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          monthly_savings: monthlySavings || suggestedSavings,
+          emergency_fund: emergencyFund || suggestedEmergencyFund,
+          investment_amount: investmentAmount || suggestedInvestment,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      toast.success('Budget plan saved successfully!');
+    } catch (error) {
+      console.error('Error saving budget:', error);
+      toast.error('Failed to save budget plan');
+    }
+  };
+
+  const handleStartEmergencyFund = () => {
+    setEmergencyFund(suggestedEmergencyFund);
+    toast.success('Emergency fund target set!');
+  };
+
+  const handleIncreaseSavings = () => {
+    const newSavings = Math.round(remaining * 0.7);
+    setMonthlySavings(suggestedSavings + newSavings);
+    toast.success('Savings target increased!');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Helmet>
@@ -70,15 +146,39 @@ export default function BudgetPlanner() {
               <p className="text-gray-600">AI-powered monthly budget optimization</p>
             </div>
             <div className="flex space-x-3">
-              <Button variant="outline">
-                <DollarSign className="w-4 h-4 mr-2" />
-                Log Extra Income
-              </Button>
-              <Button variant="outline">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Log Extra Income
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Log Extra Income</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="extraAmount">Amount</Label>
+                      <Input 
+                        id="extraAmount"
+                        type="number"
+                        placeholder="Enter amount"
+                        value={extraIncomeAmount}
+                        onChange={(e) => setExtraIncomeAmount(e.target.value)}
+                      />
+                    </div>
+                    <Button onClick={handleLogExtraIncome} className="w-full">
+                      Log Income
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button variant="outline" onClick={handleResetToAI}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Reset to AI Suggested
               </Button>
-              <Button className="bg-green-600 hover:bg-green-700">
+              <Button className="bg-green-600 hover:bg-green-700" onClick={handleSaveBudget}>
                 <Save className="w-4 h-4 mr-2" />
                 Save Budget Plan
               </Button>
@@ -100,7 +200,8 @@ export default function BudgetPlanner() {
                     <Input 
                       id="monthlySavings" 
                       type="number" 
-                      defaultValue={suggestedSavings} 
+                      value={monthlySavings || suggestedSavings}
+                      onChange={(e) => setMonthlySavings(Number(e.target.value))}
                       className="mt-1"
                     />
                     <p className="text-sm text-gray-500 mt-1">AI suggests: {format(suggestedSavings)} (20% of income)</p>
@@ -111,7 +212,8 @@ export default function BudgetPlanner() {
                     <Input 
                       id="emergencyFund" 
                       type="number" 
-                      defaultValue={suggestedEmergencyFund} 
+                      value={emergencyFund || suggestedEmergencyFund}
+                      onChange={(e) => setEmergencyFund(Number(e.target.value))}
                       className="mt-1"
                     />
                     <p className="text-sm text-gray-500 mt-1">AI suggests: {format(suggestedEmergencyFund)} (10% of income)</p>
@@ -122,7 +224,8 @@ export default function BudgetPlanner() {
                     <Input 
                       id="investmentAmount" 
                       type="number" 
-                      defaultValue={suggestedInvestment} 
+                      value={investmentAmount || suggestedInvestment}
+                      onChange={(e) => setInvestmentAmount(Number(e.target.value))}
                       className="mt-1"
                     />
                     <p className="text-sm text-gray-500 mt-1">AI suggests: {format(suggestedInvestment)} (10% of income)</p>
@@ -222,7 +325,7 @@ export default function BudgetPlanner() {
                 <p className="text-gray-600 mb-3">
                   Aim to save at least {format(suggestedEmergencyFund)} monthly for emergencies. Current savings: {format(currentSavings)}
                 </p>
-                <Button variant="outline" size="sm">Start Emergency Fund</Button>
+                <Button variant="outline" size="sm" onClick={handleStartEmergencyFund}>Start Emergency Fund</Button>
               </div>
 
               <div className="border-l-4 border-blue-500 pl-4">
@@ -234,7 +337,7 @@ export default function BudgetPlanner() {
                 <p className="text-gray-600 mb-3">
                   You have {format(remaining)} remaining. Consider allocating 70% to high-priority goals.
                 </p>
-                <Button variant="outline" size="sm">Increase Savings</Button>
+                <Button variant="outline" size="sm" onClick={handleIncreaseSavings}>Increase Savings</Button>
               </div>
 
               <div className="bg-yellow-50 p-4 rounded-lg">
