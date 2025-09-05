@@ -45,6 +45,13 @@ export default function Tracker() {
   const [loading, setLoading] = useState(true);
   const [dailyLimitINR, setDailyLimitINR] = useState<number>(0);
 
+  const updateDailyProgress = () => {
+    // Update progress bars based on daily tracking
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('trackerUpdate'));
+    }, 100);
+  };
+
   // Form state
   const [amount, setAmount] = useState<string>(""); // entered in selected currency
   const [category, setCategory] = useState<Category>("Food");
@@ -105,6 +112,9 @@ export default function Tracker() {
       setNote("");
       setDate(todayStr());
       toast({ title: "Expense added", description: `${category}${note ? ` • ${note}` : ""}` });
+      
+      // Update daily progress
+      updateDailyProgress();
     } catch (error) {
       console.error('Error adding expense:', error);
       toast({ title: "Error adding expense", variant: "destructive" });

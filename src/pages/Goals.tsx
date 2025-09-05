@@ -11,6 +11,7 @@ import { useCurrency } from "@/context/CurrencyContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
+import { toast } from "@/components/ui/use-toast";
 
 interface Goal {
   id: string;
@@ -121,6 +122,24 @@ export default function Goals() {
       target_date: goal.target_date || ''
     });
     setShowDialog(true);
+  };
+
+  const handleCompleteGoal = async (goalId: string) => {
+    const { error } = await supabase
+      .from('goals')
+      .update({ status: 'completed' })
+      .eq('id', goalId);
+
+    if (error) {
+      console.error('Error completing goal:', error);
+      return;
+    }
+
+    setGoals(goals.filter(g => g.id !== goalId));
+    toast({
+      title: "Goal Completed! 🎉",
+      description: "Congratulations on achieving your financial goal!",
+    });
   };
 
   const handleDeleteGoal = async (goalId: string) => {
@@ -362,7 +381,7 @@ export default function Goals() {
                           <Button variant="ghost" size="sm" onClick={() => handleEditGoal(goal)}>
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleCompleteGoal(goal.id)}>
                             <Check className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleDeleteGoal(goal.id)}>

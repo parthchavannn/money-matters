@@ -22,6 +22,8 @@ export default function BudgetPlanner() {
   const [emergencyFund, setEmergencyFund] = useState(0);
   const [investmentAmount, setInvestmentAmount] = useState(0);
   const [extraIncomeAmount, setExtraIncomeAmount] = useState('');
+  const [extraIncomeSource, setExtraIncomeSource] = useState('');
+  const [showIncomeDialog, setShowIncomeDialog] = useState(false);
 
   const monthlyIncome = userData?.income?.monthlyIncome || 0;
   const totalExpenses = Object.values(userData?.expenses || {}).reduce((sum, val) => sum + (val || 0), 0);
@@ -65,24 +67,46 @@ export default function BudgetPlanner() {
   ];
 
   const handleLogExtraIncome = async () => {
-    if (!extraIncomeAmount || !user) return;
+    if (!extraIncomeAmount || !extraIncomeSource || !user) return;
     
     try {
-      const { error } = await supabase
+      // Add to transactions
+      const { error: transactionError } = await supabase
         .from('transactions')
         .insert({
           user_id: user.id,
           amount: parseFloat(extraIncomeAmount),
           category: 'Extra Income',
-          description: 'Additional income logged',
           transaction_type: 'income',
-          transaction_date: new Date().toISOString().split('T')[0]
+          transaction_date: new Date().toISOString().split('T')[0],
+          description: extraIncomeSource
         });
 
-      if (error) throw error;
+      if (transactionError) throw transactionError;
+
+      // Update monthly income in profile
+      const { data: profile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('monthly_income')
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          monthly_income: (profile.monthly_income || 0) + parseFloat(extraIncomeAmount)
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
       
       setExtraIncomeAmount('');
-      toast.success('Extra income logged successfully!');
+      setExtraIncomeSource('');
+      setShowIncomeDialog(false);
+      toast.success('Extra income logged and total income updated!');
+      window.location.reload(); // Refresh to show updated data
     } catch (error) {
       console.error('Error logging extra income:', error);
       toast.error('Failed to log extra income');
@@ -103,9 +127,9 @@ export default function BudgetPlanner() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          monthly_savings: monthlySavings || suggestedSavings,
-          emergency_fund: emergencyFund || suggestedEmergencyFund,
-          investment_amount: investmentAmount || suggestedInvestment,
+          monthly_savings: monthlySavings,
+          emergency_fund: emergencyFund,
+          investment_amount: investmentAmount,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
@@ -113,6 +137,8 @@ export default function BudgetPlanner() {
       if (error) throw error;
       
       toast.success('Budget plan saved successfully!');
+      // Refresh the page to show updated values
+      window.location.reload();
     } catch (error) {
       console.error('Error saving budget:', error);
       toast.error('Failed to save budget plan');
@@ -157,21 +183,30 @@ export default function BudgetPlanner() {
                   <DialogHeader>
                     <DialogTitle>Log Extra Income</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="extraAmount">Amount</Label>
-                      <Input 
-                        id="extraAmount"
-                        type="number"
-                        placeholder="Enter amount"
-                        value={extraIncomeAmount}
-                        onChange={(e) => setExtraIncomeAmount(e.target.value)}
-                      />
-                    </div>
-                    <Button onClick={handleLogExtraIncome} className="w-full">
-                      Log Income
-                    </Button>
-                  </div>
+                   <div className="space-y-4">
+                     <div>
+                       <Label htmlFor="extraSource">Source of Extra Income</Label>
+                       <Input 
+                         id="extraSource"
+                         placeholder="e.g., Freelance, Bonus, Side Business"
+                         value={extraIncomeSource}
+                         onChange={(e) => setExtraIncomeSource(e.target.value)}
+                       />
+                     </div>
+                     <div>
+                       <Label htmlFor="extraAmount">Amount</Label>
+                       <Input 
+                         id="extraAmount"
+                         type="number"
+                         placeholder="Enter amount"
+                         value={extraIncomeAmount}
+                         onChange={(e) => setExtraIncomeAmount(e.target.value)}
+                       />
+                     </div>
+                     <Button onClick={handleLogExtraIncome} className="w-full" disabled={!extraIncomeAmount || !extraIncomeSource}>
+                       Log Income
+                     </Button>
+                   </div>
                 </DialogContent>
               </Dialog>
               <Button variant="outline" onClick={handleResetToAI}>
