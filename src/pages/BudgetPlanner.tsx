@@ -96,7 +96,7 @@ export default function BudgetPlanner() {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          monthly_income: (profile.monthly_income || 0) + parseFloat(extraIncomeAmount)
+          monthly_income: Number(profile.monthly_income || 0) + parseFloat(extraIncomeAmount)
         })
         .eq('user_id', user.id);
 

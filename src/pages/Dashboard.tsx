@@ -150,7 +150,7 @@ export default function Dashboard() {
         <div className="px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome back, {userData.profile.fullName || 'there'}! 👋</h1>
-            <p className="text-gray-600">Here's your personalized financial overview for August 2025</p>
+            <p className="text-gray-600">Here's your personalized financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
           </div>
 
           {/* Daily Spendable Guide */}
@@ -244,7 +244,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-            {/* Monthly Budget Progress */}
+          {/* Monthly Budget Progress */}
             <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
               <div className="flex items-center space-x-2 mb-6">
                 <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -256,9 +256,22 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {expenseCategories.map((category, index) => {
                   const budget = category.value;
-                  const spent = 0; // Could be linked to transactions later
-                  const percentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
-                  const remaining = budget - spent;
+                  
+                  // Calculate spent amount from current month transactions
+                  const currentMonth = new Date().getMonth();
+                  const currentYear = new Date().getFullYear();
+                  const categorySpent = transactions
+                    .filter(t => {
+                      const transactionDate = new Date(t.transaction_date);
+                      return transactionDate.getMonth() === currentMonth && 
+                             transactionDate.getFullYear() === currentYear &&
+                             t.transaction_type === 'expense' &&
+                             t.category.toLowerCase() === category.name.toLowerCase();
+                    })
+                    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+                  
+                  const percentage = budget > 0 ? Math.round((categorySpent / budget) * 100) : 0;
+                  const remaining = budget - categorySpent;
                   
                   return (
                     <div key={index} className="space-y-3">
@@ -270,7 +283,7 @@ export default function Dashboard() {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className={percentage > 100 ? 'text-red-500' : 'text-gray-900'}>
-                          {format(spent)}
+                          {format(categorySpent)}
                         </span>
                         <span className="text-gray-500">{format(budget)}</span>
                       </div>
