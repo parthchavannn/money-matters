@@ -10,17 +10,39 @@ import { Settings as SettingsIcon, User, Globe, DollarSign, Receipt, LogOut, Tra
 import { useUserData } from "@/context/UserDataContext";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
   const { userData, updateProfile, updateIncome, updateExpenses, resetUserData } = useUserData();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSaveProfile = async () => {
+    if (!user) return;
+    
     setIsSaving(true);
-    // Simulate save operation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
+    try {
+      // Save profile data to Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          full_name: userData.profile.fullName,
+          email: userData.profile.email,
+          age: userData.profile.age,
+          monthly_income: userData.income.monthlyIncome,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      console.log('Profile saved successfully');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleResetSetup = () => {

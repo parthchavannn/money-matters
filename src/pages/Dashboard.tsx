@@ -171,7 +171,7 @@ export default function Dashboard() {
   const dailySpendable = availableForGoals / 30;
   
   // Calculate net worth
-  const totalSavings = userData.income.currentSavings;
+  const totalSavings = userData.income.currentSavings || 0;
   const totalInvestments = investments.reduce((sum, inv) => sum + (Number(inv.current_value) || Number(inv.invested) || 0), 0);
   const totalDebt = debts.reduce((sum, debt) => sum + (Number(debt.remaining_amount) || 0), 0);
   const netWorth = totalSavings + totalInvestments - totalDebt;

@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CreditCard, TrendingDown, AlertTriangle, Edit, Trash2 } from "lucide-react";
+import { Plus, CreditCard, TrendingDown, AlertTriangle, Edit, Trash2, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +24,20 @@ interface Debt {
   due_date: string;
   status: string;
 }
+
+const calculateTotalRepayment = (debt: Debt): number => {
+  if (!debt.monthly_payment || !debt.interest_rate || !debt.remaining_amount) {
+    return debt.remaining_amount;
+  }
+  
+  const monthlyRate = debt.interest_rate / 100 / 12;
+  const monthsToRepay = Math.ceil(debt.remaining_amount / debt.monthly_payment);
+  
+  // Simple compound interest calculation
+  const totalWithInterest = debt.remaining_amount * Math.pow(1 + monthlyRate, monthsToRepay);
+  
+  return totalWithInterest;
+};
 
 export default function Debts() {
   const { format } = useCurrency();
@@ -142,6 +157,30 @@ export default function Debts() {
     }
 
     setDebts(debts.filter(d => d.id !== debtId));
+  };
+
+  const handleCompleteDebt = async (debt: Debt) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('debts')
+        .update({
+          status: 'completed',
+          remaining_amount: 0,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', debt.id);
+
+      if (error) throw error;
+      
+      // Remove from active debts list
+      setDebts(debts.filter(d => d.id !== debt.id));
+      toast.success(`${debt.creditor_name} debt marked as completed!`);
+    } catch (error) {
+      console.error('Error completing debt:', error);
+      toast.error('Failed to mark debt as completed');
+    }
   };
 
   const resetForm = () => {
@@ -358,6 +397,15 @@ export default function Debts() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleCompleteDebt(debt)}
+                          className="text-green-600 border-green-600 hover:bg-green-50"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Complete
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleEditDebt(debt)}>
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -367,7 +415,7 @@ export default function Debts() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm mb-4">
                       <div>
                         <div className="text-gray-600">Total Amount</div>
                         <div className="font-semibold">{format(debt.total_amount)}</div>
@@ -383,6 +431,10 @@ export default function Debts() {
                       <div>
                         <div className="text-gray-600">Interest Rate</div>
                         <div className="font-semibold">{debt.interest_rate ? `${debt.interest_rate}%` : 'Not set'}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-600">Total to Repay</div>
+                        <div className="font-semibold text-orange-600">{format(calculateTotalRepayment(debt))}</div>
                       </div>
                     </div>
 

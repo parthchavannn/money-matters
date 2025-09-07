@@ -70,7 +70,7 @@ export default function BudgetPlanner() {
     if (!extraIncomeAmount || !extraIncomeSource || !user) return;
     
     try {
-      // Add to transactions
+      // Add to transactions for current month only
       const { error: transactionError } = await supabase
         .from('transactions')
         .insert({
@@ -79,34 +79,15 @@ export default function BudgetPlanner() {
           category: 'Extra Income',
           transaction_type: 'income',
           transaction_date: new Date().toISOString().split('T')[0],
-          description: extraIncomeSource
+          description: `${extraIncomeSource} - Extra income for ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
         });
 
       if (transactionError) throw transactionError;
-
-      // Update monthly income in profile
-      const { data: profile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('monthly_income')
-        .eq('user_id', user.id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          monthly_income: Number(profile.monthly_income || 0) + parseFloat(extraIncomeAmount)
-        })
-        .eq('user_id', user.id);
-
-      if (updateError) throw updateError;
       
       setExtraIncomeAmount('');
       setExtraIncomeSource('');
       setShowIncomeDialog(false);
-      toast.success('Extra income logged and total income updated!');
-      window.location.reload(); // Refresh to show updated data
+      toast.success('Extra income logged for current month!');
     } catch (error) {
       console.error('Error logging extra income:', error);
       toast.error('Failed to log extra income');
@@ -126,19 +107,17 @@ export default function BudgetPlanner() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({
-          monthly_savings: monthlySavings,
-          emergency_fund: emergencyFund,
-          investment_amount: investmentAmount,
+        .upsert({
+          user_id: user.id,
+          monthly_savings: monthlySavings || suggestedSavings,
+          emergency_fund: emergencyFund || suggestedEmergencyFund,
+          investment_amount: investmentAmount || suggestedInvestment,
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
+        });
 
       if (error) throw error;
       
       toast.success('Budget plan saved successfully!');
-      // Refresh the page to show updated values
-      window.location.reload();
     } catch (error) {
       console.error('Error saving budget:', error);
       toast.error('Failed to save budget plan');
