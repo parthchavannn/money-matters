@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CreditCard, TrendingDown, AlertTriangle, Edit, Trash2, CheckCircle, Lightbulb } from "lucide-react";
+import { Plus, CreditCard, TrendingDown, AlertTriangle, Edit, Trash2, CheckCircle, Lightbulb, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,6 +82,8 @@ export default function Debts() {
   const { format } = useCurrency();
   const { user } = useAuth();
   const [debts, setDebts] = useState<Debt[]>([]);
+  const [showCompletedDebts, setShowCompletedDebts] = useState(false);
+  const [completedDebts, setCompletedDebts] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
@@ -97,8 +100,11 @@ export default function Debts() {
   useEffect(() => {
     if (user) {
       fetchDebts();
+      if (showCompletedDebts) {
+        fetchCompletedDebts();
+      }
     }
-  }, [user]);
+  }, [user, showCompletedDebts]);
 
   const fetchDebts = async () => {
     try {
@@ -114,6 +120,21 @@ export default function Debts() {
       console.error('Error fetching debts:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCompletedDebts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('debts')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('status', 'completed');
+
+      if (error) throw error;
+      setCompletedDebts(data || []);
+    } catch (error) {
+      console.error('Error fetching completed debts:', error);
     }
   };
 
@@ -200,6 +221,8 @@ export default function Debts() {
   const handleCompleteDebt = async (debt: Debt) => {
     if (!user) return;
     
+    if (!confirm(`Mark ${debt.creditor_name} debt as completed?`)) return;
+    
     try {
       const { error } = await supabase
         .from('debts')
@@ -212,8 +235,11 @@ export default function Debts() {
 
       if (error) throw error;
       
-      // Remove from active debts list
+      // Remove from active debts list and refresh data
       setDebts(debts.filter(d => d.id !== debt.id));
+      if (showCompletedDebts) {
+        fetchCompletedDebts();
+      }
       toast.success(`${debt.creditor_name} debt marked as completed!`);
     } catch (error) {
       console.error('Error completing debt:', error);
@@ -404,106 +430,162 @@ export default function Debts() {
             </Card>
           </div>
 
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Debts</h2>
-            {loading ? (
-              <div className="text-center py-8">Loading debts...</div>
-            ) : debts.length === 0 ? (
-              <Card className="p-8 text-center">
-                <div className="text-gray-500 mb-4">
-                  <AlertTriangle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No debts found. Great job on staying debt-free!</p>
-                </div>
-                <Button className="bg-red-600 hover:bg-red-700" onClick={() => setShowDialog(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Debt (if needed)
-                </Button>
-              </Card>
-            ) : (
-              <div className="space-y-6">
-                {debts.map((debt) => (
-                  <Card key={debt.id} className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="text-2xl">💳</div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Your Debts</h2>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="show-completed" className="text-sm text-gray-600">
+                Show Completed
+              </label>
+              <Switch
+                id="show-completed"
+                checked={showCompletedDebts}
+                onCheckedChange={setShowCompletedDebts}
+              />
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-8">Loading debts...</div>
+          ) : debts.length === 0 ? (
+            <Card className="p-8 text-center">
+              <div className="text-gray-500 mb-4">
+                <AlertTriangle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No debts found. Great job on staying debt-free!</p>
+              </div>
+              <Button className="bg-red-600 hover:bg-red-700" onClick={() => setShowDialog(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Debt (if needed)
+              </Button>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {debts.map((debt) => (
+                <Card key={debt.id} className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="text-2xl">💳</div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{debt.creditor_name}</h3>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Badge variant="outline">{debt.debt_type}</Badge>
+                          <Badge variant="secondary">{debt.status}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleCompleteDebt(debt)}
+                        className="text-green-600 border-green-600 hover:bg-green-50"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Complete
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleEditDebt(debt)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteDebt(debt.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm mb-4">
+                    <div>
+                      <div className="text-gray-600">Total Amount</div>
+                      <div className="font-semibold">{format(debt.total_amount)}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600">Remaining</div>
+                      <div className="font-semibold text-red-600">{format(debt.remaining_amount)}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600">Monthly Payment</div>
+                      <div className="font-semibold">{debt.monthly_payment ? format(debt.monthly_payment) : 'Not set'}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600">Interest Rate</div>
+                      <div className="font-semibold">{debt.interest_rate ? `${debt.interest_rate}%` : 'Not set'}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600">Total to Repay</div>
+                      <div className="font-semibold text-orange-600">{format(calculateTotalRepayment(debt))}</div>
+                    </div>
+                  </div>
+
+                  {debt.due_date && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Lightbulb className="w-4 h-4 text-blue-600" />
+                        <span className="font-medium text-blue-800">Payment Suggestion</span>
+                      </div>
+                      <div className="text-sm text-blue-700">
+                        {calculateSuggestedPayment(debt).message}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-3">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{debt.creditor_name}</h3>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="outline">{debt.debt_type}</Badge>
-                            <Badge variant="secondary">{debt.status}</Badge>
+                          <div className="text-blue-600">Due Date</div>
+                          <div className="font-semibold">{new Date(debt.due_date).toLocaleDateString()}</div>
+                        </div>
+                        <div>
+                          <div className="text-blue-600">Suggested Monthly Payment</div>
+                          <div className="font-bold text-lg text-blue-800">
+                            {format(calculateSuggestedPayment(debt).amount)}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleCompleteDebt(debt)}
-                          className="text-green-600 border-green-600 hover:bg-green-50"
-                        >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Complete
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleEditDebt(debt)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteDebt(debt.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
                     </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm mb-4">
-                      <div>
-                        <div className="text-gray-600">Total Amount</div>
-                        <div className="font-semibold">{format(debt.total_amount)}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-600">Remaining</div>
-                        <div className="font-semibold text-red-600">{format(debt.remaining_amount)}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-600">Monthly Payment</div>
-                        <div className="font-semibold">{debt.monthly_payment ? format(debt.monthly_payment) : 'Not set'}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-600">Interest Rate</div>
-                        <div className="font-semibold">{debt.interest_rate ? `${debt.interest_rate}%` : 'Not set'}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-600">Total to Repay</div>
-                        <div className="font-semibold text-orange-600">{format(calculateTotalRepayment(debt))}</div>
-                      </div>
-                    </div>
-
-                    {debt.due_date && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Lightbulb className="w-4 h-4 text-blue-600" />
-                          <span className="font-medium text-blue-800">Payment Suggestion</span>
-                        </div>
-                        <div className="text-sm text-blue-700">
-                          {calculateSuggestedPayment(debt).message}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-3">
+          {/* Completed Debts Section */}
+          {showCompletedDebts && (
+            <div className="mt-8">
+              <div className="flex items-center space-x-2 mb-4">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Completed Debts</h3>
+                <Badge variant="secondary">{completedDebts.length}</Badge>
+              </div>
+              
+              {completedDebts.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <div className="text-gray-500">
+                    <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No completed debts yet.</p>
+                  </div>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {completedDebts.map((debt) => (
+                    <Card key={debt.id} className="p-4 bg-green-50 border-green-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="text-2xl">✅</div>
                           <div>
-                            <div className="text-blue-600">Due Date</div>
-                            <div className="font-semibold">{new Date(debt.due_date).toLocaleDateString()}</div>
-                          </div>
-                          <div>
-                            <div className="text-blue-600">Suggested Monthly Payment</div>
-                            <div className="font-bold text-lg text-blue-800">
-                              {format(calculateSuggestedPayment(debt).amount)}
+                            <h4 className="font-semibold text-gray-900">{debt.creditor_name}</h4>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge variant="outline" className="border-green-600 text-green-600">
+                                {debt.debt_type}
+                              </Badge>
+                              <Badge className="bg-green-600">Completed</Badge>
                             </div>
                           </div>
                         </div>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-600">Original Amount</div>
+                          <div className="font-semibold text-gray-900">{format(debt.total_amount)}</div>
+                        </div>
                       </div>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

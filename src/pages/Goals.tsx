@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Target, TrendingUp, Calendar, Edit, Check, Trash2 } from "lucide-react";
+import { Plus, Target, TrendingUp, Calendar, Edit, Check, Trash2, CheckCircle } from "lucide-react";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
 
 interface Goal {
   id: string;
@@ -28,6 +29,8 @@ export default function Goals() {
   const { format } = useCurrency();
   const { user } = useAuth();
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [completedGoals, setCompletedGoals] = useState<Goal[]>([]);
+  const [showCompletedGoals, setShowCompletedGoals] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -43,8 +46,11 @@ export default function Goals() {
   useEffect(() => {
     if (user) {
       fetchGoals();
+      if (showCompletedGoals) {
+        fetchCompletedGoals();
+      }
     }
-  }, [user]);
+  }, [user, showCompletedGoals]);
 
   const fetchGoals = async () => {
     try {
@@ -60,6 +66,21 @@ export default function Goals() {
       console.error('Error fetching goals:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCompletedGoals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('status', 'completed');
+
+      if (error) throw error;
+      setCompletedGoals(data || []);
+    } catch (error) {
+      console.error('Error fetching completed goals:', error);
     }
   };
 
@@ -125,6 +146,8 @@ export default function Goals() {
   };
 
   const handleCompleteGoal = async (goalId: string) => {
+    if (!confirm('Mark this goal as completed?')) return;
+    
     const { error } = await supabase
       .from('goals')
       .update({ status: 'completed' })
@@ -136,6 +159,9 @@ export default function Goals() {
     }
 
     setGoals(goals.filter(g => g.id !== goalId));
+    if (showCompletedGoals) {
+      fetchCompletedGoals();
+    }
     toast({
       title: "Goal Completed! 🎉",
       description: "Congratulations on achieving your financial goal!",
@@ -334,95 +360,162 @@ export default function Goals() {
             </Card>
           </div>
 
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Active Goals</h2>
-            {loading ? (
-              <div className="text-center py-8">Loading goals...</div>
-            ) : goals.length === 0 ? (
-              <Card className="p-8 text-center">
-                <div className="text-gray-500 mb-4">
-                  <Target className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No goals found. Start by adding your first financial goal!</p>
-                </div>
-                <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowDialog(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Goal
-                </Button>
-              </Card>
-            ) : (
-              <div className="space-y-6">
-                {goals.map((goal) => {
-                  const progress = calculateProgress(goal.current_amount, goal.target_amount);
-                  const targetDate = goal.target_date ? new Date(goal.target_date).toLocaleDateString() : 'No date set';
-                  
-                  return (
-                    <Card key={goal.id} className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="text-2xl">🎯</div>
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
-                              {progress >= 100 && (
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Active Goals</h2>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="show-completed-goals" className="text-sm text-gray-600">
+                Show Completed
+              </label>
+              <Switch
+                id="show-completed-goals"
+                checked={showCompletedGoals}
+                onCheckedChange={setShowCompletedGoals}
+              />
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-8">Loading goals...</div>
+          ) : goals.length === 0 ? (
+            <Card className="p-8 text-center">
+              <div className="text-gray-500 mb-4">
+                <Target className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No goals found. Start by adding your first financial goal!</p>
+              </div>
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowDialog(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Goal
+              </Button>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {goals.map((goal) => {
+                const progress = calculateProgress(goal.current_amount, goal.target_amount);
+                const targetDate = goal.target_date ? new Date(goal.target_date).toLocaleDateString() : 'No date set';
+                
+                return (
+                  <Card key={goal.id} className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="text-2xl">🎯</div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
+                            {progress >= 100 && (
+                              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-sm">✓</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge variant={goal.priority === "high" ? "destructive" : "secondary"}>
+                              {goal.priority} priority
+                            </Badge>
+                            <Badge variant="outline">{goal.category}</Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditGoal(goal)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleCompleteGoal(goal.id)}>
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteGoal(goal.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-600">Progress</span>
+                        <span className="text-sm font-medium">{progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-gray-900 h-2 rounded-full" 
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <div className="text-gray-600">Current Amount</div>
+                        <div className="font-semibold">{format(goal.current_amount)}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-600">Target Amount</div>
+                        <div className="font-semibold">{format(goal.target_amount)}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-600">Target Date</div>
+                        <div className="font-semibold">{targetDate}</div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Completed Goals Section */}
+          {showCompletedGoals && (
+            <div className="mt-8">
+              <div className="flex items-center space-x-2 mb-4">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Completed Goals</h3>
+                <Badge variant="secondary">{completedGoals.length}</Badge>
+              </div>
+              
+              {completedGoals.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <div className="text-gray-500">
+                    <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No completed goals yet.</p>
+                  </div>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {completedGoals.map((goal) => {
+                    const progress = calculateProgress(goal.current_amount, goal.target_amount);
+                    const targetDate = goal.target_date ? new Date(goal.target_date).toLocaleDateString() : 'No date set';
+                    
+                    return (
+                      <Card key={goal.id} className="p-4 bg-green-50 border-green-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="text-2xl">🏆</div>
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <h4 className="font-semibold text-gray-900">{goal.title}</h4>
                                 <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                                   <span className="text-white text-sm">✓</span>
                                 </div>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Badge variant={goal.priority === "high" ? "destructive" : "secondary"}>
-                                {goal.priority} priority
-                              </Badge>
-                              <Badge variant="outline">{goal.category}</Badge>
+                              </div>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <Badge variant="outline" className="border-green-600 text-green-600">
+                                  {goal.category}
+                                </Badge>
+                                <Badge className="bg-green-600">Completed</Badge>
+                              </div>
                             </div>
                           </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-600">Target Amount</div>
+                            <div className="font-semibold text-gray-900">{format(goal.target_amount)}</div>
+                            <div className="text-sm text-gray-600 mt-1">Achieved: {format(goal.current_amount)}</div>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleEditGoal(goal)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleCompleteGoal(goal.id)}>
-                            <Check className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteGoal(goal.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-gray-600">Progress</span>
-                          <span className="text-sm font-medium">{progress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-gray-900 h-2 rounded-full" 
-                            style={{ width: `${progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <div className="text-gray-600">Current Amount</div>
-                          <div className="font-semibold">{format(goal.current_amount)}</div>
-                        </div>
-                        <div>
-                          <div className="text-gray-600">Target Amount</div>
-                          <div className="font-semibold">{format(goal.target_amount)}</div>
-                        </div>
-                        <div>
-                          <div className="text-gray-600">Target Date</div>
-                          <div className="font-semibold">{targetDate}</div>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
