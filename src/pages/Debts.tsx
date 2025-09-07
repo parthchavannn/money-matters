@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CreditCard, TrendingDown, AlertTriangle, Edit, Trash2, CheckCircle } from "lucide-react";
+import { Plus, CreditCard, TrendingDown, AlertTriangle, Edit, Trash2, CheckCircle, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +37,44 @@ const calculateTotalRepayment = (debt: Debt): number => {
   const totalWithInterest = debt.remaining_amount * Math.pow(1 + monthlyRate, monthsToRepay);
   
   return totalWithInterest;
+};
+
+const calculateSuggestedPayment = (debt: Debt): { amount: number; message: string } => {
+  if (!debt.due_date) {
+    return { 
+      amount: 0, 
+      message: "Set a due date to get payment suggestions" 
+    };
+  }
+
+  const today = new Date();
+  const dueDate = new Date(debt.due_date);
+  const monthsUntilDue = Math.max(1, Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+
+  if (monthsUntilDue <= 0) {
+    return { 
+      amount: debt.remaining_amount, 
+      message: "Payment overdue! Pay full amount immediately" 
+    };
+  }
+
+  let suggestedAmount = debt.remaining_amount / monthsUntilDue;
+
+  // Factor in interest if available
+  if (debt.interest_rate && debt.interest_rate > 0) {
+    const monthlyRate = debt.interest_rate / 100 / 12;
+    // Use PMT formula for loan payments
+    const numerator = debt.remaining_amount * monthlyRate * Math.pow(1 + monthlyRate, monthsUntilDue);
+    const denominator = Math.pow(1 + monthlyRate, monthsUntilDue) - 1;
+    suggestedAmount = numerator / denominator;
+  }
+
+  const urgencyMessage = monthsUntilDue <= 3 ? "Urgent: " : monthsUntilDue <= 6 ? "Soon: " : "";
+  
+  return { 
+    amount: suggestedAmount, 
+    message: `${urgencyMessage}Pay ₹${Math.ceil(suggestedAmount).toLocaleString()} monthly to clear by due date (${monthsUntilDue} months left)` 
+  };
 };
 
 export default function Debts() {
@@ -439,10 +477,25 @@ export default function Debts() {
                     </div>
 
                     {debt.due_date && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <div className="text-gray-600">Due Date</div>
-                          <div className="font-semibold">{new Date(debt.due_date).toLocaleDateString()}</div>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Lightbulb className="w-4 h-4 text-blue-600" />
+                          <span className="font-medium text-blue-800">Payment Suggestion</span>
+                        </div>
+                        <div className="text-sm text-blue-700">
+                          {calculateSuggestedPayment(debt).message}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-3">
+                          <div>
+                            <div className="text-blue-600">Due Date</div>
+                            <div className="font-semibold">{new Date(debt.due_date).toLocaleDateString()}</div>
+                          </div>
+                          <div>
+                            <div className="text-blue-600">Suggested Monthly Payment</div>
+                            <div className="font-bold text-lg text-blue-800">
+                              {format(calculateSuggestedPayment(debt).amount)}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
