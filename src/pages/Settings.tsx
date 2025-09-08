@@ -24,7 +24,7 @@ export default function Settings() {
     
     setIsSaving(true);
     try {
-      // Save profile data to Supabase
+      // Save complete profile data to Supabase
       const { error } = await supabase
         .from('profiles')
         .upsert({
@@ -32,7 +32,11 @@ export default function Settings() {
           full_name: userData.profile.fullName,
           email: userData.profile.email,
           age: userData.profile.age,
+          location: userData.profile.city,
+          employment_status: userData.profile.occupation,
           monthly_income: userData.income.monthlyIncome,
+          monthly_expenses: JSON.parse(JSON.stringify(userData.expenses)),
+          currency_code: userData.profile.preferredCurrency === 'INR' ? 'INR' : userData.profile.preferredCurrency,
           updated_at: new Date().toISOString()
         });
 
@@ -309,7 +313,7 @@ export default function Settings() {
                         type="number"
                         value={userData.expenses.rent || ''}
                         onChange={(e) => updateExpenses({ rent: Number(e.target.value) })}
-                        placeholder="₹"
+                        placeholder="0"
                         className="mt-1" 
                       />
                     </div>
@@ -331,7 +335,7 @@ export default function Settings() {
                         type="number"
                         value={userData.expenses.insurance || ''}
                         onChange={(e) => updateExpenses({ insurance: Number(e.target.value) })}
-                        placeholder="₹"
+                        placeholder="0"
                         className="mt-1" 
                       />
                     </div>
@@ -355,7 +359,7 @@ export default function Settings() {
                         type="number"
                         value={userData.expenses.fuel || ''}
                         onChange={(e) => updateExpenses({ fuel: Number(e.target.value) })}
-                        placeholder="₹"
+                        placeholder="0"
                         className="mt-1" 
                       />
                     </div>
@@ -366,7 +370,7 @@ export default function Settings() {
                         type="number"
                         value={userData.expenses.subscriptions || ''}
                         onChange={(e) => updateExpenses({ subscriptions: Number(e.target.value) })}
-                        placeholder="₹"
+                        placeholder="0"
                         className="mt-1" 
                       />
                     </div>
@@ -390,7 +394,7 @@ export default function Settings() {
                         type="number"
                         value={userData.expenses.internetPhone || ''}
                         onChange={(e) => updateExpenses({ internetPhone: Number(e.target.value) })}
-                        placeholder="₹"
+                        placeholder="0"
                         className="mt-1" 
                       />
                     </div>
@@ -401,7 +405,7 @@ export default function Settings() {
                         type="number"
                         value={userData.expenses.domesticHelp || ''}
                         onChange={(e) => updateExpenses({ domesticHelp: Number(e.target.value) })}
-                        placeholder="₹"
+                        placeholder="0"
                         className="mt-1" 
                       />
                     </div>
@@ -415,7 +419,7 @@ export default function Settings() {
                       type="number"
                       value={userData.expenses.maintenance || ''}
                       onChange={(e) => updateExpenses({ maintenance: Number(e.target.value) })}
-                      placeholder="₹"
+                      placeholder="0"
                       className="mt-1" 
                     />
                   </div>

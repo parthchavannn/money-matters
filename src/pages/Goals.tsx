@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Target, TrendingUp, Calendar, Edit, Check, Trash2, CheckCircle } from "lucide-react";
+import { Plus, Target, TrendingUp, Calendar, Edit, Check, Trash2, CheckCircle, Lightbulb } from "lucide-react";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -199,6 +199,25 @@ export default function Goals() {
     return target > 0 ? Math.round((current / target) * 100) : 0;
   };
 
+  const calculateMonthlySuggestion = (goal: Goal) => {
+    if (!goal.target_date) {
+      return "Set a target date to get monthly suggestions";
+    }
+    
+    const today = new Date();
+    const targetDate = new Date(goal.target_date);
+    const monthsRemaining = Math.max(1, Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    
+    if (monthsRemaining <= 0) {
+      return "Target date has passed";
+    }
+    
+    const remainingAmount = Math.max(0, goal.target_amount - goal.current_amount);
+    const suggestedAmount = remainingAmount / monthsRemaining;
+    
+    return `₹${Math.ceil(suggestedAmount).toLocaleString()} per month (${monthsRemaining} months left)`;
+  };
+
   const totalTarget = goals.reduce((sum, goal) => sum + goal.target_amount, 0);
   const totalSaved = goals.reduce((sum, goal) => sum + goal.current_amount, 0);
 
@@ -239,7 +258,7 @@ export default function Goals() {
                   id="title"
                   value={newGoal.title}
                   onChange={(e) => setNewGoal({...newGoal, title: e.target.value})}
-                  placeholder="Emergency fund, vacation, etc."
+                  placeholder="0"
                 />
               </div>
 
@@ -453,6 +472,15 @@ export default function Goals() {
                       <div>
                         <div className="text-gray-600">Target Date</div>
                         <div className="font-semibold">{targetDate}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Monthly Suggestion */}
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="flex items-center space-x-2 text-sm">
+                        <Lightbulb className="w-4 h-4 text-blue-500" />
+                        <span className="text-gray-600">Suggested Monthly Savings:</span>
+                        <span className="font-medium text-blue-600">{calculateMonthlySuggestion(goal)}</span>
                       </div>
                     </div>
                   </Card>

@@ -163,25 +163,25 @@ export default function BudgetPlanner() {
                     <DialogTitle>Log Extra Income</DialogTitle>
                   </DialogHeader>
                    <div className="space-y-4">
-                     <div>
-                       <Label htmlFor="extraSource">Source of Extra Income</Label>
-                       <Input 
-                         id="extraSource"
-                         placeholder="e.g., Freelance, Bonus, Side Business"
-                         value={extraIncomeSource}
-                         onChange={(e) => setExtraIncomeSource(e.target.value)}
-                       />
-                     </div>
-                     <div>
-                       <Label htmlFor="extraAmount">Amount</Label>
-                       <Input 
-                         id="extraAmount"
-                         type="number"
-                         placeholder="Enter amount"
-                         value={extraIncomeAmount}
-                         onChange={(e) => setExtraIncomeAmount(e.target.value)}
-                       />
-                     </div>
+                      <div>
+                        <Label htmlFor="extraSource">Source of Extra Income</Label>
+                        <Input 
+                          id="extraSource"
+                          placeholder="0"
+                          value={extraIncomeSource}
+                          onChange={(e) => setExtraIncomeSource(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="extraAmount">Amount</Label>
+                        <Input 
+                          id="extraAmount"
+                          type="number"
+                          placeholder="0"
+                          value={extraIncomeAmount}
+                          onChange={(e) => setExtraIncomeAmount(e.target.value)}
+                        />
+                      </div>
                      <Button onClick={handleLogExtraIncome} className="w-full" disabled={!extraIncomeAmount || !extraIncomeSource}>
                        Log Income
                      </Button>
@@ -216,6 +216,7 @@ export default function BudgetPlanner() {
                       type="number" 
                       value={monthlySavings || suggestedSavings}
                       onChange={(e) => setMonthlySavings(Number(e.target.value))}
+                      placeholder="0"
                       className="mt-1"
                     />
                     <p className="text-sm text-gray-500 mt-1">AI suggests: {format(suggestedSavings)} (20% of income)</p>
@@ -228,6 +229,7 @@ export default function BudgetPlanner() {
                       type="number" 
                       value={emergencyFund || suggestedEmergencyFund}
                       onChange={(e) => setEmergencyFund(Number(e.target.value))}
+                      placeholder="0"
                       className="mt-1"
                     />
                     <p className="text-sm text-gray-500 mt-1">AI suggests: {format(suggestedEmergencyFund)} (10% of income)</p>
@@ -240,6 +242,7 @@ export default function BudgetPlanner() {
                       type="number" 
                       value={investmentAmount || suggestedInvestment}
                       onChange={(e) => setInvestmentAmount(Number(e.target.value))}
+                      placeholder="0"
                       className="mt-1"
                     />
                     <p className="text-sm text-gray-500 mt-1">AI suggests: {format(suggestedInvestment)} (10% of income)</p>

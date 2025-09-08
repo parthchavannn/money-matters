@@ -243,6 +243,43 @@ export default function Dashboard() {
     }
   ];
 
+  // Generate budget progress data
+  const budgetCategories = [
+    { name: "Rent", value: userData.expenses.rent, color: "#8b5cf6" },
+    { name: "Groceries", value: userData.expenses.groceries, color: "#a78bfa" },
+    { name: "Transport", value: userData.expenses.transport, color: "#c4b5fd" },
+    { name: "Utilities", value: userData.expenses.utilities, color: "#e9d5ff" },
+    { name: "Other", value: userData.expenses.other, color: "#7c3aed" },
+  ].filter(category => category.value > 0).map(category => {
+    // Map category names to transaction categories properly
+    const categoryMapping = {
+      'Groceries': ['groceries', 'food & dining', 'food and dining'],
+      'Transport': ['transport', 'fuel', 'car'],
+      'Utilities': ['utilities', 'electricity', 'water', 'gas'],
+      'Rent': ['rent', 'housing'],
+      'Other': ['other', 'shopping', 'entertainment']
+    };
+    
+    const matchingCategories = categoryMapping[category.name] || [category.name.toLowerCase()];
+    
+    const spent = currentMonthTransactions
+      .filter(t => t.transaction_type === 'expense' && 
+                   matchingCategories.some(cat => 
+                     t.category.toLowerCase().includes(cat.toLowerCase())
+                   ))
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+    
+    const projected = spent * (30 / new Date().getDate()); // Project for full month
+    
+    return {
+      name: category.name,
+      budgeted: category.value,
+      spent,
+      projected,
+      color: category.color
+    };
+  });
+
   // Generate "What's Changed" data
   const whatsChangedData = [
     {
@@ -261,35 +298,13 @@ export default function Dashboard() {
     },
     {
       type: "alert" as const,
-      title: "Budget alert",
-      description: "Groceries budget 85% used",
+      title: "Budget alert", 
+      description: budgetCategories.length > 0 ? 
+        `${budgetCategories[0].name} budget ${Math.round((budgetCategories[0].spent / budgetCategories[0].budgeted) * 100)}% used` :
+        "Monitor your spending",
       impact: "neutral" as const
     }
   ];
-
-  // Generate budget progress data
-  const budgetCategories = [
-    { name: "Rent", value: userData.expenses.rent, color: "#8b5cf6" },
-    { name: "Groceries", value: userData.expenses.groceries, color: "#a78bfa" },
-    { name: "Transport", value: userData.expenses.transport, color: "#c4b5fd" },
-    { name: "Utilities", value: userData.expenses.utilities, color: "#e9d5ff" },
-    { name: "Other", value: userData.expenses.other, color: "#7c3aed" },
-  ].filter(category => category.value > 0).map(category => {
-    const spent = currentMonthTransactions
-      .filter(t => t.transaction_type === 'expense' && 
-                   t.category.toLowerCase() === category.name.toLowerCase())
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-    
-    const projected = spent * (30 / new Date().getDate()); // Project for full month
-    
-    return {
-      name: category.name,
-      budgeted: category.value,
-      spent,
-      projected,
-      color: category.color
-    };
-  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -374,7 +389,7 @@ export default function Dashboard() {
                 <label className="block text-sm text-gray-600 mb-1">Amount</label>
                 <input 
                   type="number" 
-                  placeholder="₹ 0.00" 
+                  placeholder="0" 
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"

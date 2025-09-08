@@ -298,7 +298,7 @@ export default function Debts() {
                   id="creditor_name"
                   value={newDebt.creditor_name}
                   onChange={(e) => setNewDebt({...newDebt, creditor_name: e.target.value})}
-                  placeholder="Bank, Credit Card, etc."
+                  placeholder="0"
                 />
               </div>
 
@@ -328,7 +328,7 @@ export default function Debts() {
                     step="0.01"
                     value={newDebt.interest_rate}
                     onChange={(e) => setNewDebt({...newDebt, interest_rate: e.target.value})}
-                    placeholder="12.5"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -341,7 +341,7 @@ export default function Debts() {
                     type="number"
                     value={newDebt.total_amount}
                     onChange={(e) => setNewDebt({...newDebt, total_amount: e.target.value})}
-                    placeholder="100000"
+                    placeholder="0"
                   />
                 </div>
 
@@ -352,7 +352,7 @@ export default function Debts() {
                     type="number"
                     value={newDebt.remaining_amount}
                     onChange={(e) => setNewDebt({...newDebt, remaining_amount: e.target.value})}
-                    placeholder="75000"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -365,7 +365,7 @@ export default function Debts() {
                     type="number"
                     value={newDebt.monthly_payment}
                     onChange={(e) => setNewDebt({...newDebt, monthly_payment: e.target.value})}
-                    placeholder="5000"
+                    placeholder="0"
                   />
                 </div>
 
@@ -514,16 +514,16 @@ export default function Debts() {
                     </div>
                   </div>
 
-                  {debt.due_date && (
+                   {debt.due_date && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
                       <div className="flex items-center space-x-2 mb-2">
                         <Lightbulb className="w-4 h-4 text-blue-600" />
-                        <span className="font-medium text-blue-800">Payment Suggestion</span>
+                        <span className="font-medium text-blue-800">Payment Insights & Suggestions</span>
                       </div>
-                      <div className="text-sm text-blue-700">
+                      <div className="text-sm text-blue-700 mb-3">
                         {calculateSuggestedPayment(debt).message}
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-3">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                         <div>
                           <div className="text-blue-600">Due Date</div>
                           <div className="font-semibold">{new Date(debt.due_date).toLocaleDateString()}</div>
@@ -534,7 +534,19 @@ export default function Debts() {
                             {format(calculateSuggestedPayment(debt).amount)}
                           </div>
                         </div>
+                        <div>
+                          <div className="text-blue-600">Interest on Remaining</div>
+                          <div className="font-semibold text-orange-600">
+                            {debt.interest_rate ? `${((debt.remaining_amount * debt.interest_rate / 100) / 12).toFixed(0)} monthly` : 'Not set'}
+                          </div>
+                        </div>
                       </div>
+                      
+                      {debt.interest_rate && debt.interest_rate > 15 && (
+                        <div className="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs text-yellow-800">
+                          <strong>High Interest Alert:</strong> Consider paying more than minimum to reduce total interest burden.
+                        </div>
+                      )}
                     </div>
                   )}
                 </Card>
