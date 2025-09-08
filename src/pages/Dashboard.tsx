@@ -299,7 +299,7 @@ export default function Dashboard() {
     {
       type: "alert" as const,
       title: "Budget alert", 
-      description: budgetCategories.length > 0 ? 
+      description: budgetCategories && budgetCategories.length > 0 ? 
         `${budgetCategories[0].name} budget ${Math.round((budgetCategories[0].spent / budgetCategories[0].budgeted) * 100)}% used` :
         "Monitor your spending",
       impact: "neutral" as const
