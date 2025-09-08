@@ -12,7 +12,7 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { WhatsChangedCard } from "@/components/dashboard/WhatsChangedCard";
 import { BudgetProgressCard } from "@/components/dashboard/BudgetProgressCard";
 import { AIInsightsCard } from "@/components/dashboard/AIInsightsCard";
-import { CalendarDays, Filter } from "lucide-react";
+import { CalendarDays, Filter, TrendingUp } from "lucide-react";
 import { endOfMonth, startOfMonth, subMonths, format as formatDate } from "date-fns";
 import type { BudgetPlan } from "@/utils/budget";
 
@@ -310,7 +310,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50">
       <Helmet>
         <title>Welcome back! – Money Matter</title>
-        <meta name="description" content="Here's your financial overview for August 2025" />
+        <meta name="description" content="Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}" />
         <link rel="canonical" href="https://1778dcd4-4c4f-40f6-bb5c-ec1b224c1580.lovableproject.com/dashboard" />
       </Helmet>
       
@@ -318,8 +318,11 @@ export default function Dashboard() {
         <div className="px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">Welcome back, {userData.profile.fullName || 'there'}! 👋</h1>
-              <p className="text-muted-foreground">Here's your personalized financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+              <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center">
+                Welcome back! 
+                <span className="ml-2">👋</span>
+              </h1>
+              <p className="text-muted-foreground text-lg">Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
             </div>
             <div className="flex items-center space-x-2">
               <Button
@@ -349,26 +352,82 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Top KPIs with Sparklines */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {kpiData.map((kpi, index) => (
-              <KPICard key={index} {...kpi} />
-            ))}
+          {/* Daily Spendable Guide Banner */}
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-purple-700 rounded-2xl p-8 text-white relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">Your Daily Spendable Guide</h2>
+                    <p className="text-blue-100 text-lg">A safe-to-spend amount for your daily wants, after all savings and needs.</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-4xl font-bold">₹{Math.round(dailySpendable).toLocaleString()}</div>
+                    <div className="text-blue-200 text-lg">per day</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* What's Changed Snapshot & AI Insights */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <WhatsChangedCard 
-              changes={whatsChangedData}
-              format={format}
-            />
-            <AIInsightsCard
-              userData={userData}
-              totalDebt={totalDebt}
-              monthlyDebtPayment={monthlyDebtPayment}
-              format={format}
-              onOptimizeBudget={() => navigate('/budget-planner')}
-            />
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card className="bg-green-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <span className="text-green-100">Monthly Income</span>
+                  </div>
+                  <span className="text-sm bg-green-500 px-2 py-1 rounded">+12%</span>
+                </div>
+                <div className="text-3xl font-bold">₹{monthlyIncome.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-orange-500 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">⚠️</span>
+                  </div>
+                  <span className="text-orange-100">Fixed Expenses</span>
+                </div>
+                <div className="text-3xl font-bold">₹{totalExpenses.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-blue-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">💰</span>
+                  </div>
+                  <span className="text-blue-100">Total Savings</span>
+                </div>
+                <div className="text-3xl font-bold">₹{(totalSavings + totalInvestments).toLocaleString()}</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-purple-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                      <span className="text-lg">🎯</span>
+                    </div>
+                    <span className="text-purple-100">Available for Goals</span>
+                  </div>
+                  <span className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold">
+                    {goals.length}
+                  </span>
+                </div>
+                <div className="text-3xl font-bold">₹{Math.max(0, availableForGoals).toLocaleString()}</div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Budget Tracker & Streak */}

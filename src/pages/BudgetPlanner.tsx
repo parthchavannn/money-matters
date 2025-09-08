@@ -105,15 +105,38 @@ export default function BudgetPlanner() {
     if (!user) return;
     
     try {
-      const { error } = await supabase
+      // First check if profile exists
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: user.id,
-          monthly_savings: monthlySavings || suggestedSavings,
-          emergency_fund: emergencyFund || suggestedEmergencyFund,
-          investment_amount: investmentAmount || suggestedInvestment,
-          updated_at: new Date().toISOString()
-        });
+        .select('user_id')
+        .eq('user_id', user.id)
+        .single();
+
+      const profileData = {
+        monthly_savings: monthlySavings || suggestedSavings,
+        emergency_fund: emergencyFund || suggestedEmergencyFund,
+        investment_amount: investmentAmount || suggestedInvestment,
+        updated_at: new Date().toISOString()
+      };
+
+      let error;
+      if (existingProfile) {
+        // Update existing profile
+        const result = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('user_id', user.id);
+        error = result.error;
+      } else {
+        // Insert new profile
+        const result = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            ...profileData
+          });
+        error = result.error;
+      }
 
       if (error) throw error;
       
