@@ -29,7 +29,6 @@ export default function Dashboard() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('🍔 Food & Dining');
   const [note, setNote] = useState('');
-  const [dateFilter, setDateFilter] = useState<'month' | 'quarter' | 'year'>('month');
 
   useEffect(() => {
     if (user) {
@@ -316,40 +315,12 @@ export default function Dashboard() {
       
       <div className="md:pl-64">
         <div className="px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center">
-                Welcome back! 
-                <span className="ml-2">👋</span>
-              </h1>
-              <p className="text-muted-foreground text-lg">Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDateFilter('month')}
-                className={dateFilter === 'month' ? 'bg-primary text-primary-foreground' : ''}
-              >
-                This Month
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDateFilter('quarter')}
-                className={dateFilter === 'quarter' ? 'bg-primary text-primary-foreground' : ''}
-              >
-                Quarter
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDateFilter('year')}
-                className={dateFilter === 'year' ? 'bg-primary text-primary-foreground' : ''}
-              >
-                Year
-              </Button>
-            </div>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center">
+              Welcome back! 
+              <span className="ml-2">👋</span>
+            </h1>
+            <p className="text-muted-foreground text-lg">Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
           </div>
 
           {/* Daily Spendable Guide Banner */}
@@ -430,54 +401,6 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Budget Tracker & Streak */}
-          <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <span className="text-orange-600">🔥</span>
-                </div>
-                <h3 className="text-lg font-semibold">Budget Tracker & Streak</h3>
-              </div>
-              <div className="text-orange-600 text-2xl font-bold">{streakDays}</div>
-            </div>
-            <p className="text-gray-600 mb-4">Log any expense to maintain your streak!</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Amount</label>
-                <input 
-                  type="number" 
-                  placeholder="0" 
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Category</label>
-                <select 
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option>🍔 Food & Dining</option>
-                  <option>🛒 Groceries</option>
-                  <option>🚗 Transport</option>
-                  <option>⚡ Utilities</option>
-                  <option>🛍️ Shopping</option>
-                </select>
-              </div>
-              <div className="flex items-end">
-                <button 
-                  onClick={logExpense}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-md hover:from-orange-600 hover:to-red-600 transition-colors"
-                >
-                  + Log Expense
-                </button>
-              </div>
-            </div>
-          </div>
 
           {/* Enhanced Budget Progress with drill-down */}
           <div className="mb-8">
@@ -564,7 +487,7 @@ export default function Dashboard() {
                     <label className="block text-sm text-muted-foreground mb-1">Amount</label>
                     <input 
                       type="number" 
-                      placeholder="₹ 0.00" 
+                      placeholder="0" 
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
