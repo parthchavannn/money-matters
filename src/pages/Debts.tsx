@@ -144,9 +144,31 @@ export default function Debts() {
   const handleCreateDebt = async () => {
     if (!user) return;
 
+    // Validate required fields
+    if (!newDebt.creditor_name.trim()) {
+      toast.error('Please enter creditor name');
+      return;
+    }
+    if (!newDebt.debt_type) {
+      toast.error('Please select debt type');
+      return;
+    }
+    if (!newDebt.total_amount || parseFloat(newDebt.total_amount) <= 0) {
+      toast.error('Please enter a valid total amount');
+      return;
+    }
+    if (!newDebt.remaining_amount || parseFloat(newDebt.remaining_amount) <= 0) {
+      toast.error('Please enter a valid remaining amount');
+      return;
+    }
+    if (parseFloat(newDebt.remaining_amount) > parseFloat(newDebt.total_amount)) {
+      toast.error('Remaining amount cannot be greater than total amount');
+      return;
+    }
+
     const debtData = {
       user_id: user.id,
-      creditor_name: newDebt.creditor_name,
+      creditor_name: newDebt.creditor_name.trim(),
       debt_type: newDebt.debt_type,
       total_amount: parseFloat(newDebt.total_amount),
       remaining_amount: parseFloat(newDebt.remaining_amount),
@@ -165,11 +187,13 @@ export default function Debts() {
 
       if (error) {
         console.error('Error updating debt:', error);
+        toast.error('Failed to update debt');
         return;
       }
 
       if (data) {
         setDebts(debts.map(d => d.id === editingDebt.id ? data[0] : d));
+        toast.success('Debt updated successfully');
         resetForm();
       }
     } else {
@@ -180,11 +204,13 @@ export default function Debts() {
 
       if (error) {
         console.error('Error creating debt:', error);
+        toast.error('Failed to add debt');
         return;
       }
 
       if (data) {
         setDebts([...debts, data[0]]);
+        toast.success('Debt added successfully');
         resetForm();
       }
     }
@@ -298,7 +324,8 @@ export default function Debts() {
                   id="creditor_name"
                   value={newDebt.creditor_name}
                   onChange={(e) => setNewDebt({...newDebt, creditor_name: e.target.value})}
-                  placeholder="0"
+                  placeholder="Enter creditor name"
+                  required
                 />
               </div>
 
