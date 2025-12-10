@@ -22,6 +22,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Goals", href: "/goals", icon: Target },
   { name: "Budget Planner", href: "/budget-planner", icon: Calculator },
+  { name: "Recurring", href: "/recurring", icon: Calendar },
   { name: "Debts & EMIs", href: "/debts", icon: CreditCard },
   { name: "Investments", href: "/investments", icon: TrendingUp },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
