@@ -19,6 +19,7 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import Tracker from "./pages/Tracker";
 import Loans from "./pages/Loans";
+import RecurringTransactions from "./pages/RecurringTransactions";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
@@ -70,6 +71,7 @@ const AppContent = () => {
             <Route path="/settings" element={<Settings />} />
             <Route path="/tracker" element={<Tracker />} />
             <Route path="/loans" element={<Loans />} />
+            <Route path="/recurring" element={<RecurringTransactions />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
