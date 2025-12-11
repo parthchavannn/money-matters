@@ -12,8 +12,9 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { WhatsChangedCard } from "@/components/dashboard/WhatsChangedCard";
 import { BudgetProgressCard } from "@/components/dashboard/BudgetProgressCard";
 import { AIInsightsCard } from "@/components/dashboard/AIInsightsCard";
+import { BillRemindersCard } from "@/components/dashboard/BillRemindersCard";
 import { CalendarDays, Filter, TrendingUp } from "lucide-react";
-import { endOfMonth, startOfMonth, subMonths, format as formatDate } from "date-fns";
+import { endOfMonth, startOfMonth, subMonths, format as formatDate, addDays } from "date-fns";
 import type { BudgetPlan } from "@/utils/budget";
 
 export default function Dashboard() {
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
   const [investments, setInvestments] = useState([]);
+  const [recurringTransactions, setRecurringTransactions] = useState([]);
   const [streakDays, setStreakDays] = useState(0);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('🍔 Food & Dining');
@@ -36,6 +38,7 @@ export default function Dashboard() {
       loadRecentTransactions();
       loadDebts();
       loadInvestments();
+      loadRecurringTransactions();
       calculateStreak();
     }
   }, [user]);
@@ -98,6 +101,24 @@ export default function Dashboard() {
       setInvestments(data || []);
     } catch (error) {
       console.error('Error loading investments:', error);
+    }
+  };
+
+  const loadRecurringTransactions = async () => {
+    try {
+      const thirtyDaysFromNow = addDays(new Date(), 30).toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('recurring_transactions')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('is_active', true)
+        .lte('next_occurrence', thirtyDaysFromNow)
+        .order('next_occurrence', { ascending: true });
+
+      if (error) throw error;
+      setRecurringTransactions(data || []);
+    } catch (error) {
+      console.error('Error loading recurring transactions:', error);
     }
   };
 
@@ -305,6 +326,30 @@ export default function Dashboard() {
     }
   ];
 
+  // Generate bill reminders from recurring transactions and debts
+  const billReminders = [
+    ...recurringTransactions
+      .filter((rt: any) => rt.transaction_type === 'expense')
+      .map((rt: any) => ({
+        id: rt.id,
+        title: rt.description || rt.category,
+        amount: Number(rt.amount),
+        dueDate: new Date(rt.next_occurrence),
+        type: 'recurring' as const,
+        category: rt.category
+      })),
+    ...debts
+      .filter((d: any) => d.due_date)
+      .map((d: any) => ({
+        id: d.id,
+        title: d.creditor_name,
+        amount: Number(d.monthly_payment) || Number(d.minimum_payment) || 0,
+        dueDate: new Date(d.due_date),
+        type: 'debt' as const,
+        category: d.debt_type
+      }))
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Helmet>
@@ -409,6 +454,11 @@ export default function Dashboard() {
               format={format}
               onViewDetails={(category) => navigate('/budgets', { state: { category } })}
             />
+          </div>
+
+          {/* Bill Reminders */}
+          <div className="mb-8">
+            <BillRemindersCard reminders={billReminders} formatCurrency={format} />
           </div>
 
           {/* Bottom Row - Goals and Quick Actions */}
