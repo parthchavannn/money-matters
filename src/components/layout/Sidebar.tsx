@@ -10,7 +10,8 @@ import {
   Settings,
   Zap,
   Users,
-  Calendar
+  Calendar,
+  Wallet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +26,7 @@ const navigation = [
   { name: "Recurring", href: "/recurring", icon: Calendar },
   { name: "Debts & EMIs", href: "/debts", icon: CreditCard },
   { name: "Investments", href: "/investments", icon: TrendingUp },
+  { name: "Net Worth", href: "/net-worth", icon: Wallet },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
