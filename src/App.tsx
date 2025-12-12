@@ -21,6 +21,7 @@ import Tracker from "./pages/Tracker";
 import Loans from "./pages/Loans";
 import RecurringTransactions from "./pages/RecurringTransactions";
 import NetWorth from "./pages/NetWorth";
+import DebtPayoffCalculator from "./pages/DebtPayoffCalculator";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
@@ -74,6 +75,7 @@ const AppContent = () => {
             <Route path="/loans" element={<Loans />} />
             <Route path="/recurring" element={<RecurringTransactions />} />
             <Route path="/net-worth" element={<NetWorth />} />
+            <Route path="/debt-calculator" element={<DebtPayoffCalculator />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
