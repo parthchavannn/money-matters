@@ -23,6 +23,7 @@ import RecurringTransactions from "./pages/RecurringTransactions";
 import NetWorth from "./pages/NetWorth";
 import DebtPayoffCalculator from "./pages/DebtPayoffCalculator";
 import SavingsProjections from "./pages/SavingsProjections";
+import FinancialReport from "./pages/FinancialReport";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
@@ -78,6 +79,7 @@ const AppContent = () => {
             <Route path="/net-worth" element={<NetWorth />} />
             <Route path="/debt-calculator" element={<DebtPayoffCalculator />} />
             <Route path="/savings-projections" element={<SavingsProjections />} />
+            <Route path="/financial-report" element={<FinancialReport />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
