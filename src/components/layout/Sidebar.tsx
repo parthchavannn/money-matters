@@ -11,7 +11,8 @@ import {
   Zap,
   Users,
   Calendar,
-  Wallet
+  Wallet,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +31,7 @@ const navigation = [
   { name: "Investments", href: "/investments", icon: TrendingUp },
   { name: "Net Worth", href: "/net-worth", icon: Wallet },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Financial Report", href: "/financial-report", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
