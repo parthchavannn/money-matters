@@ -31,6 +31,7 @@ const navigation = [
   { name: "Investments", href: "/investments", icon: TrendingUp },
   { name: "Net Worth", href: "/net-worth", icon: Wallet },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Spending Trends", href: "/spending-trends", icon: TrendingUp },
   { name: "Financial Report", href: "/financial-report", icon: FileText },
   { name: "Financial Calendar", href: "/financial-calendar", icon: Calendar },
   { name: "Settings", href: "/settings", icon: Settings },
