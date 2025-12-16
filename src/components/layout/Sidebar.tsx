@@ -32,6 +32,7 @@ const navigation = [
   { name: "Net Worth", href: "/net-worth", icon: Wallet },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Financial Report", href: "/financial-report", icon: FileText },
+  { name: "Financial Calendar", href: "/financial-calendar", icon: Calendar },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
