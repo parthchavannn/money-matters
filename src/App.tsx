@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { UserDataProvider, useUserData } from "./context/UserDataContext";
@@ -26,6 +26,9 @@ import SavingsProjections from "./pages/SavingsProjections";
 import FinancialReport from "./pages/FinancialReport";
 import FinancialCalendar from "./pages/FinancialCalendar";
 import SpendingTrends from "./pages/SpendingTrends";
+import PlanningHub from "./pages/PlanningHub";
+import WealthHub from "./pages/WealthHub";
+import ReportsHub from "./pages/ReportsHub";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
@@ -63,27 +66,34 @@ const AppContent = () => {
 
   return (
     <HashRouter>
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-background">
         <Sidebar />
         <div className="flex-1 overflow-auto">
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/tracker" element={<Tracker />} />
+            {/* Planning Hub & Sub-pages */}
+            <Route path="/planning" element={<PlanningHub />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/budget-planner" element={<BudgetPlanner />} />
+            <Route path="/recurring" element={<RecurringTransactions />} />
+            <Route path="/savings-projections" element={<SavingsProjections />} />
+            {/* Wealth Hub & Sub-pages */}
+            <Route path="/wealth" element={<WealthHub />} />
             <Route path="/debts" element={<Debts />} />
             <Route path="/investments" element={<Investments />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/tracker" element={<Tracker />} />
-            <Route path="/loans" element={<Loans />} />
-            <Route path="/recurring" element={<RecurringTransactions />} />
             <Route path="/net-worth" element={<NetWorth />} />
             <Route path="/debt-calculator" element={<DebtPayoffCalculator />} />
-            <Route path="/savings-projections" element={<SavingsProjections />} />
+            <Route path="/loans" element={<Loans />} />
+            {/* Reports Hub & Sub-pages */}
+            <Route path="/reports" element={<ReportsHub />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/spending-trends" element={<SpendingTrends />} />
             <Route path="/financial-report" element={<FinancialReport />} />
             <Route path="/financial-calendar" element={<FinancialCalendar />} />
-            <Route path="/spending-trends" element={<SpendingTrends />} />
+            {/* Settings & Other */}
+            <Route path="/settings" element={<Settings />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
