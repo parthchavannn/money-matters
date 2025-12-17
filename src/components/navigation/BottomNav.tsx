@@ -1,14 +1,39 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, LayoutDashboard, ReceiptText, CreditCard, UserPlus } from "lucide-react";
+import { LayoutDashboard, ReceiptText, Target, Wallet, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { to: "/", label: "Home", Icon: Home, match: (p: string) => p === "/" },
-  { to: "/dashboard", label: "Dashboard", Icon: LayoutDashboard, match: (p: string) => p.startsWith("/dashboard") },
-  { to: "/tracker", label: "Tracker", Icon: ReceiptText, match: (p: string) => p.startsWith("/tracker") },
-  { to: "/loans", label: "Loans", Icon: CreditCard, match: (p: string) => p.startsWith("/loans") },
-  { to: "/onboarding", label: "Setup", Icon: UserPlus, match: (p: string) => p.startsWith("/onboarding") },
+  { 
+    to: "/dashboard", 
+    label: "Dashboard", 
+    Icon: LayoutDashboard, 
+    match: (p: string) => p === "/dashboard" || p === "/" 
+  },
+  { 
+    to: "/tracker", 
+    label: "Tracker", 
+    Icon: ReceiptText, 
+    match: (p: string) => p.startsWith("/tracker") 
+  },
+  { 
+    to: "/planning", 
+    label: "Planning", 
+    Icon: Target, 
+    match: (p: string) => ["/planning", "/goals", "/budget-planner", "/recurring", "/savings-projections"].some(r => p.startsWith(r))
+  },
+  { 
+    to: "/wealth", 
+    label: "Wealth", 
+    Icon: Wallet, 
+    match: (p: string) => ["/wealth", "/debts", "/investments", "/net-worth", "/debt-calculator", "/loans"].some(r => p.startsWith(r))
+  },
+  { 
+    to: "/reports", 
+    label: "Reports", 
+    Icon: BarChart3, 
+    match: (p: string) => ["/reports", "/analytics", "/spending-trends", "/financial-report", "/financial-calendar"].some(r => p.startsWith(r))
+  },
 ] as const;
 
 export default function BottomNav() {
@@ -29,7 +54,7 @@ export default function BottomNav() {
               <Link
                 to={to}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 py-2 text-xs",
+                  "flex flex-col items-center justify-center gap-1 py-2 text-xs transition-colors",
                   active ? "text-primary" : "text-muted-foreground"
                 )}
                 aria-current={active ? "page" : undefined}
