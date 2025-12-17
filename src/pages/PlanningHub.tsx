@@ -10,32 +10,32 @@ const planningFeatures = [
     description: "Set and track your financial goals with progress monitoring",
     href: "/goals",
     icon: Target,
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-50",
+    gradient: "from-emerald-500 to-teal-600",
+    iconBg: "bg-emerald-500",
   },
   {
     title: "Budget Planner",
     description: "Plan your monthly budget with AI-powered suggestions",
     href: "/budget-planner",
     icon: Calculator,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
+    gradient: "from-blue-500 to-indigo-600",
+    iconBg: "bg-blue-500",
   },
   {
     title: "Recurring Transactions",
     description: "Manage recurring income and expenses automatically",
     href: "/recurring",
     icon: Calendar,
-    color: "text-purple-600",
-    bgColor: "bg-purple-50",
+    gradient: "from-purple-500 to-pink-600",
+    iconBg: "bg-purple-500",
   },
   {
     title: "Savings Projections",
     description: "Visualize when you'll achieve your savings goals",
     href: "/savings-projections",
     icon: TrendingUp,
-    color: "text-amber-600",
-    bgColor: "bg-amber-50",
+    gradient: "from-amber-500 to-orange-600",
+    iconBg: "bg-amber-500",
   },
 ];
 
@@ -50,18 +50,22 @@ export default function PlanningHub() {
           </div>
           
           <div className="grid gap-4 md:grid-cols-2">
-            {planningFeatures.map((feature) => (
+            {planningFeatures.map((feature, index) => (
               <Link key={feature.href} to={feature.href}>
-                <Card className="h-full transition-all hover:shadow-md hover:border-primary/30 cursor-pointer group">
+                <Card 
+                  className="h-full overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer group border-0 animate-fade-in"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className={`h-2 bg-gradient-to-r ${feature.gradient}`} />
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2.5 rounded-lg ${feature.bgColor}`}>
-                        <feature.icon className={`h-5 w-5 ${feature.color}`} />
+                      <div className={`p-2.5 rounded-xl ${feature.iconBg} shadow-lg`}>
+                        <feature.icon className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1">
                         <CardTitle className="text-base flex items-center justify-between">
                           {feature.title}
-                          <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                         </CardTitle>
                       </div>
                     </div>
