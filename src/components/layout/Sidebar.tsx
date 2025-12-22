@@ -3,11 +3,16 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Target, 
-  Wallet,
+  Calculator, 
+  CreditCard, 
+  TrendingUp, 
   BarChart3, 
   Settings,
   Zap,
-  ReceiptText
+  Users,
+  Calendar,
+  Wallet,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,10 +22,18 @@ import { computeFinancialScore } from "@/utils/financial";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Tracker", href: "/tracker", icon: ReceiptText },
-  { name: "Planning", href: "/planning", icon: Target },
-  { name: "Wealth", href: "/wealth", icon: Wallet },
-  { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Goals", href: "/goals", icon: Target },
+  { name: "Savings Projections", href: "/savings-projections", icon: TrendingUp },
+  { name: "Budget Planner", href: "/budget-planner", icon: Calculator },
+  { name: "Recurring", href: "/recurring", icon: Calendar },
+  { name: "Debts & EMIs", href: "/debts", icon: CreditCard },
+  { name: "Debt Calculator", href: "/debt-calculator", icon: Calculator },
+  { name: "Investments", href: "/investments", icon: TrendingUp },
+  { name: "Net Worth", href: "/net-worth", icon: Wallet },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Spending Trends", href: "/spending-trends", icon: TrendingUp },
+  { name: "Financial Report", href: "/financial-report", icon: FileText },
+  { name: "Financial Calendar", href: "/financial-calendar", icon: Calendar },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -58,56 +71,43 @@ export default function Sidebar() {
     })();
   }, [user, userData]);
 
-  const isActiveRoute = (href: string) => {
-    if (href === "/planning") {
-      return ["/planning", "/goals", "/budget-planner", "/recurring", "/savings-projections"].some(p => pathname.startsWith(p));
-    }
-    if (href === "/wealth") {
-      return ["/wealth", "/debts", "/investments", "/net-worth", "/debt-calculator", "/loans"].some(p => pathname.startsWith(p));
-    }
-    if (href === "/reports") {
-      return ["/reports", "/analytics", "/spending-trends", "/financial-report", "/financial-calendar"].some(p => pathname.startsWith(p));
-    }
-    return pathname === href;
-  };
-
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
-      <div className="flex flex-col flex-grow bg-background border-r border-border pt-5 overflow-y-auto">
+      <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 overflow-y-auto">
         <div className="flex items-center flex-shrink-0 px-4 mb-8">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-primary-foreground" />
+            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+              <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">Money Matter</h1>
-              <p className="text-sm text-muted-foreground">Smart Finance Assistant</p>
+              <h1 className="text-lg font-semibold text-gray-900">Money Matter</h1>
+              <p className="text-sm text-gray-500">Smart Finance Assistant</p>
             </div>
           </div>
         </div>
 
         <nav className="mt-5 flex-1 px-2 space-y-1">
           <div className="mb-6">
-            <h3 className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              MAIN MENU
+            <h3 className="px-3 text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+              FINANCIAL HUB
             </h3>
             {navigation.map((item) => {
-              const isActive = isActiveRoute(item.href);
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
+                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-300 ease-in-out transform hover:scale-105",
                     isActive
-                      ? "bg-primary/10 text-primary border-r-2 border-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-green-100 text-green-900 border-r-2 border-green-600 shadow-sm"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm"
                   )}
                 >
                   <item.icon
                     className={cn(
-                      "mr-3 h-5 w-5 flex-shrink-0 transition-colors",
-                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                      "mr-3 h-5 w-5 flex-shrink-0 transition-all duration-300 ease-in-out group-hover:scale-110",
+                      isActive ? "text-green-600" : "text-gray-400"
                     )}
                   />
                   {item.name}
@@ -116,37 +116,44 @@ export default function Sidebar() {
             })}
           </div>
 
-          <div className="pt-6 border-t border-border">
-            <h3 className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+          <div className="pt-6 border-t border-gray-200">
+            <h3 className="px-3 text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
               QUICK INSIGHTS
             </h3>
             <div className="px-3 py-2">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Financial Score</span>
-                <span className="text-sm font-medium text-primary">{score}/100</span>
+                <span className="text-sm text-gray-600">Financial Score</span>
+                <span className="text-sm font-medium text-green-600">{score}/100</span>
               </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${score}%` }}></div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-green-600 h-2 rounded-full" style={{ width: `${score}%` }}></div>
               </div>
             </div>
             
             <div className="px-3 py-2">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-muted-foreground">Active Goals</span>
-                <span className="text-sm font-medium text-foreground">{activeGoals}</span>
+                <span className="text-sm text-gray-600">Active Goals</span>
+                <span className="text-sm font-medium">{activeGoals}</span>
+              </div>
+            </div>
+
+            <div className="px-3 py-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-600">This Month</span>
+                <span className="text-sm font-medium text-blue-600">On Track</span>
               </div>
             </div>
           </div>
         </nav>
 
-        <div className="flex-shrink-0 p-4 border-t border-border">
+        <div className="flex-shrink-0 p-4 border-t border-gray-200">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-accent-foreground">U</span>
+            <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+              <span className="text-sm font-medium text-white">U</span>
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-foreground">Welcome back!</p>
-              <p className="text-xs text-muted-foreground">Your finances are improving</p>
+              <p className="text-sm font-medium text-gray-700">Welcome back!</p>
+              <p className="text-xs text-gray-500">Your finances are improving</p>
             </div>
           </div>
         </div>
