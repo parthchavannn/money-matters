@@ -13,10 +13,13 @@ interface MobileHeaderProps {
 const routeTitles: Record<string, string> = {
   "/": "Money Matter",
   "/dashboard": "Dashboard",
-  "/tracker": "Tracker",
+  "/tracker": "Add Transaction",
+  "/planning": "Planning",
+  "/wealth": "Wealth",
+  "/reports": "Reports",
   "/goals": "Goals",
-  "/savings-projections": "Savings",
-  "/budget-planner": "Budget",
+  "/savings-projections": "Savings Projections",
+  "/budget-planner": "Budget Planner",
   "/recurring": "Recurring",
   "/debts": "Debts & EMIs",
   "/debt-calculator": "Debt Calculator",
@@ -25,8 +28,8 @@ const routeTitles: Record<string, string> = {
   "/net-worth": "Net Worth",
   "/analytics": "Analytics",
   "/spending-trends": "Spending Trends",
-  "/financial-report": "Report",
-  "/financial-calendar": "Calendar",
+  "/financial-report": "Financial Report",
+  "/financial-calendar": "Financial Calendar",
   "/settings": "Settings",
   "/onboarding": "Setup",
 };
@@ -36,7 +39,7 @@ export default function MobileHeader({ onMenuOpen, showBack, title }: MobileHead
   const navigate = useNavigate();
   
   const pageTitle = title || routeTitles[pathname] || "Money Matter";
-  const isHome = pathname === "/" || pathname === "/dashboard";
+  const isHome = pathname === "/" || pathname === "/dashboard" || pathname === "/planning" || pathname === "/wealth" || pathname === "/reports" || pathname === "/tracker";
 
   return (
     <header className="mobile-header">
