@@ -222,17 +222,16 @@ export default function Goals() {
   const totalSaved = goals.reduce((sum, goal) => sum + goal.current_amount, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Helmet>
         <title>Financial Goals – Money Matter</title>
         <meta name="description" content="Track your progress toward your dreams" />
         <link rel="canonical" href="https://1778dcd4-4c4f-40f6-bb5c-ec1b224c1580.lovableproject.com/goals" />
       </Helmet>
 
-      <div className="md:pl-64">
-        <div className="px-4 py-8 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
+      <div className="px-4 py-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
               <h1 className="text-2xl font-bold text-gray-900">Financial Goals</h1>
               <p className="text-gray-600">Track your progress toward your dreams</p>
             </div>
@@ -542,9 +541,8 @@ export default function Goals() {
                   })}
                 </div>
               )}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

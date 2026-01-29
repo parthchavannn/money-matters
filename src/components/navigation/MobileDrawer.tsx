@@ -3,18 +3,18 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Target, 
-  Calculator, 
-  CreditCard, 
-  TrendingUp, 
+  Wallet, 
   BarChart3, 
   Settings,
   Zap,
-  Calendar,
-  Wallet,
-  FileText,
   X,
   ReceiptText,
-  PiggyBank
+  PiggyBank,
+  Calculator,
+  Calendar,
+  CreditCard,
+  TrendingUp,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -25,29 +25,90 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 interface MobileDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const navigation = [
+const mainNav = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, color: "bg-primary/10 text-primary" },
-  { name: "Tracker", href: "/tracker", icon: ReceiptText, color: "bg-info/10 text-info" },
+  { name: "Add Transaction", href: "/tracker", icon: ReceiptText, color: "bg-success/10 text-success" },
+];
+
+const planningNav = [
   { name: "Goals", href: "/goals", icon: Target, color: "bg-warning/10 text-warning" },
   { name: "Savings", href: "/savings-projections", icon: PiggyBank, color: "bg-success/10 text-success" },
   { name: "Budget Planner", href: "/budget-planner", icon: Calculator, color: "bg-primary/10 text-primary" },
   { name: "Recurring", href: "/recurring", icon: Calendar, color: "bg-info/10 text-info" },
   { name: "Debts & EMIs", href: "/debts", icon: CreditCard, color: "bg-destructive/10 text-destructive" },
-  { name: "Debt Calculator", href: "/debt-calculator", icon: Calculator, color: "bg-destructive/10 text-destructive" },
-  { name: "Investments", href: "/investments", icon: TrendingUp, color: "bg-success/10 text-success" },
+];
+
+const wealthNav = [
   { name: "Net Worth", href: "/net-worth", icon: Wallet, color: "bg-warning/10 text-warning" },
+  { name: "Investments", href: "/investments", icon: TrendingUp, color: "bg-success/10 text-success" },
+  { name: "Debt Calculator", href: "/debt-calculator", icon: Calculator, color: "bg-destructive/10 text-destructive" },
+];
+
+const reportsNav = [
   { name: "Analytics", href: "/analytics", icon: BarChart3, color: "bg-info/10 text-info" },
   { name: "Spending Trends", href: "/spending-trends", icon: TrendingUp, color: "bg-primary/10 text-primary" },
   { name: "Financial Report", href: "/financial-report", icon: FileText, color: "bg-muted text-muted-foreground" },
   { name: "Financial Calendar", href: "/financial-calendar", icon: Calendar, color: "bg-warning/10 text-warning" },
-  { name: "Settings", href: "/settings", icon: Settings, color: "bg-muted text-muted-foreground" },
 ];
+
+const NavSection = ({ 
+  title, 
+  items, 
+  pathname, 
+  onClose 
+}: { 
+  title: string; 
+  items: typeof mainNav; 
+  pathname: string;
+  onClose: () => void;
+}) => (
+  <div className="mb-4">
+    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
+      {title}
+    </h3>
+    <div className="space-y-1">
+      {items.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.name}
+            to={item.href}
+            onClick={onClose}
+            className={cn(
+              "flex items-center gap-3 px-4 py-2.5 rounded-xl mx-2 transition-all touch-manipulation",
+              isActive
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "hover:bg-muted active:bg-muted"
+            )}
+          >
+            <div className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center",
+              isActive ? "bg-primary-foreground/20" : item.color
+            )}>
+              <item.icon className={cn(
+                "h-4 w-4",
+                isActive && "text-primary-foreground"
+              )} />
+            </div>
+            <span className={cn(
+              "text-sm font-medium",
+              isActive ? "text-primary-foreground" : "text-foreground"
+            )}>
+              {item.name}
+            </span>
+          </Link>
+        );
+      })}
+    </div>
+  </div>
+);
 
 export default function MobileDrawer({ open, onOpenChange }: MobileDrawerProps) {
   const { pathname } = useLocation();
@@ -74,41 +135,62 @@ export default function MobileDrawer({ open, onOpenChange }: MobileDrawerProps) 
           </div>
         </DrawerHeader>
 
-        <div className="flex-1 overflow-y-auto p-4">
-          <nav className="space-y-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={() => onOpenChange(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all touch-manipulation",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "hover:bg-muted active:bg-muted"
-                  )}
-                >
-                  <div className={cn(
-                    "w-9 h-9 rounded-lg flex items-center justify-center",
-                    isActive ? "bg-primary-foreground/20" : item.color
-                  )}>
-                    <item.icon className={cn(
-                      "h-5 w-5",
-                      isActive && "text-primary-foreground"
-                    )} />
-                  </div>
-                  <span className={cn(
-                    "font-medium",
-                    isActive ? "text-primary-foreground" : "text-foreground"
-                  )}>
-                    {item.name}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
+        <div className="flex-1 overflow-y-auto py-4">
+          <NavSection 
+            title="Main" 
+            items={mainNav} 
+            pathname={pathname}
+            onClose={() => onOpenChange(false)}
+          />
+          
+          <Separator className="my-3 mx-4" />
+          
+          <NavSection 
+            title="Planning" 
+            items={planningNav} 
+            pathname={pathname}
+            onClose={() => onOpenChange(false)}
+          />
+          
+          <Separator className="my-3 mx-4" />
+          
+          <NavSection 
+            title="Wealth" 
+            items={wealthNav} 
+            pathname={pathname}
+            onClose={() => onOpenChange(false)}
+          />
+          
+          <Separator className="my-3 mx-4" />
+          
+          <NavSection 
+            title="Reports" 
+            items={reportsNav} 
+            pathname={pathname}
+            onClose={() => onOpenChange(false)}
+          />
+
+          {/* Settings at bottom */}
+          <div className="mt-4 px-2">
+            <Link
+              to="/settings"
+              onClick={() => onOpenChange(false)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all touch-manipulation",
+                pathname === "/settings"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "hover:bg-muted active:bg-muted"
+              )}
+            >
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center",
+                pathname === "/settings" ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
+              )}>
+                <Settings className="h-4 w-4" />
+              </div>
+              <span className="text-sm font-medium">Settings</span>
+            </Link>
+          </div>
         </div>
 
         <div className="p-4 border-t border-border/50 safe-bottom">

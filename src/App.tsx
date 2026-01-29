@@ -8,7 +8,7 @@ import { CurrencyProvider } from "./context/CurrencyContext";
 import { UserDataProvider, useUserData } from "./context/UserDataContext";
 import { useAuth } from "./hooks/useAuth";
 import { AuthForm } from "./components/auth/AuthForm";
-import Sidebar from "./components/layout/Sidebar";
+import MainLayout from "./layouts/MainLayout";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Goals from "./pages/Goals";
@@ -28,6 +28,9 @@ import FinancialCalendar from "./pages/FinancialCalendar";
 import SpendingTrends from "./pages/SpendingTrends";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import PlanningHub from "./pages/PlanningHub";
+import WealthHub from "./pages/WealthHub";
+import ReportsHub from "./pages/ReportsHub";
 
 const queryClient = new QueryClient();
 
@@ -63,32 +66,37 @@ const AppContent = () => {
 
   return (
     <HashRouter>
-      <div className="flex h-screen bg-gray-50">
-        <Sidebar />
-        <div className="flex-1 overflow-auto">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/goals" element={<Goals />} />
-            <Route path="/budget-planner" element={<BudgetPlanner />} />
-            <Route path="/debts" element={<Debts />} />
-            <Route path="/investments" element={<Investments />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/tracker" element={<Tracker />} />
-            <Route path="/loans" element={<Loans />} />
-            <Route path="/recurring" element={<RecurringTransactions />} />
-            <Route path="/net-worth" element={<NetWorth />} />
-            <Route path="/debt-calculator" element={<DebtPayoffCalculator />} />
-            <Route path="/savings-projections" element={<SavingsProjections />} />
-            <Route path="/financial-report" element={<FinancialReport />} />
-            <Route path="/financial-calendar" element={<FinancialCalendar />} />
-            <Route path="/spending-trends" element={<SpendingTrends />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </div>
-      </div>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Index />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          {/* Hub Pages */}
+          <Route path="/planning" element={<PlanningHub />} />
+          <Route path="/wealth" element={<WealthHub />} />
+          <Route path="/reports" element={<ReportsHub />} />
+          {/* Planning Sub-pages */}
+          <Route path="/goals" element={<Goals />} />
+          <Route path="/budget-planner" element={<BudgetPlanner />} />
+          <Route path="/recurring" element={<RecurringTransactions />} />
+          <Route path="/debts" element={<Debts />} />
+          <Route path="/savings-projections" element={<SavingsProjections />} />
+          {/* Wealth Sub-pages */}
+          <Route path="/net-worth" element={<NetWorth />} />
+          <Route path="/investments" element={<Investments />} />
+          <Route path="/debt-calculator" element={<DebtPayoffCalculator />} />
+          {/* Reports Sub-pages */}
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/spending-trends" element={<SpendingTrends />} />
+          <Route path="/financial-report" element={<FinancialReport />} />
+          <Route path="/financial-calendar" element={<FinancialCalendar />} />
+          {/* Other Pages */}
+          <Route path="/tracker" element={<Tracker />} />
+          <Route path="/loans" element={<Loans />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
     </HashRouter>
   );
 };

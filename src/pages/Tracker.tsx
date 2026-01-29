@@ -185,9 +185,8 @@ export default function Tracker() {
         <meta name="description" content="Quickly log daily expenses, view weekly totals and streaks." />
         <link rel="canonical" href="https://1778dcd4-4c4f-40f6-bb5c-ec1b224c1580.lovableproject.com/tracker" />
       </Helmet>
-      <div className="md:pl-64">
-        <main className="container py-8 md:py-10">
-        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div className="px-4 py-4">
+        <header className="flex flex-col gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold">Daily Tracker</h1>
             <p className="text-muted-foreground">Log expenses in {currency.code}. Data is saved on your device.</p>
@@ -302,9 +301,8 @@ export default function Tracker() {
                 </ul>
               )}
             </CardContent>
-          </Card>
-        </section>
-        </main>
+        </Card>
+      </section>
       </div>
     </div>
   );

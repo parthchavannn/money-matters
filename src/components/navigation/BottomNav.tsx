@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, LayoutDashboard, PlusCircle, Target, BarChart3, LucideIcon } from "lucide-react";
+import { Home, PlusCircle, Target, Wallet, BarChart3, LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -12,11 +12,51 @@ interface NavItem {
 }
 
 const items: NavItem[] = [
-  { to: "/dashboard", label: "Home", Icon: Home, match: (p: string) => p === "/dashboard" },
-  { to: "/goals", label: "Goals", Icon: Target, match: (p: string) => p.startsWith("/goals") },
-  { to: "/tracker", label: "Add", Icon: PlusCircle, isAction: true, match: (p: string) => p.startsWith("/tracker") },
-  { to: "/analytics", label: "Stats", Icon: BarChart3, match: (p: string) => p.startsWith("/analytics") || p.startsWith("/spending") },
-  { to: "/budget-planner", label: "Budget", Icon: LayoutDashboard, match: (p: string) => p.startsWith("/budget") },
+  { 
+    to: "/dashboard", 
+    label: "Home", 
+    Icon: Home, 
+    match: (p: string) => p === "/" || p === "/dashboard" 
+  },
+  { 
+    to: "/planning", 
+    label: "Plan", 
+    Icon: Target, 
+    match: (p: string) => 
+      p === "/planning" || 
+      p.startsWith("/goals") || 
+      p.startsWith("/budget") || 
+      p.startsWith("/recurring") || 
+      p.startsWith("/debts") ||
+      p.startsWith("/savings-projections")
+  },
+  { 
+    to: "/tracker", 
+    label: "Add", 
+    Icon: PlusCircle, 
+    isAction: true, 
+    match: (p: string) => p.startsWith("/tracker") 
+  },
+  { 
+    to: "/wealth", 
+    label: "Wealth", 
+    Icon: Wallet, 
+    match: (p: string) => 
+      p === "/wealth" || 
+      p.startsWith("/net-worth") || 
+      p.startsWith("/investments") || 
+      p.startsWith("/debt-calculator")
+  },
+  { 
+    to: "/reports", 
+    label: "Reports", 
+    Icon: BarChart3, 
+    match: (p: string) => 
+      p === "/reports" || 
+      p.startsWith("/analytics") || 
+      p.startsWith("/spending") || 
+      p.startsWith("/financial")
+  },
 ];
 
 export default function BottomNav() {

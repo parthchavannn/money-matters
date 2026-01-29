@@ -358,7 +358,7 @@ export default function Dashboard() {
         <link rel="canonical" href="https://1778dcd4-4c4f-40f6-bb5c-ec1b224c1580.lovableproject.com/dashboard" />
       </Helmet>
       
-      <div className="mobile-container py-4 md:py-8 md:pl-64 md:pr-8">
+      <div className="px-4 py-4">
         {/* Welcome Section - Mobile Optimized */}
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
