@@ -72,8 +72,8 @@ export default function Sidebar() {
   }, [user, userData]);
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-40">
-      <div className="flex flex-col flex-grow bg-card border-r border-border pt-5 overflow-y-auto">
+    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
+      <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 overflow-y-auto">
         <div className="flex items-center flex-shrink-0 px-4 mb-8">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">

@@ -145,18 +145,19 @@ export default function Analytics() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <Helmet>
         <title>Financial Analytics – Money Matter</title>
         <meta name="description" content="Your financial journey, visualized" />
         <link rel="canonical" href="https://1778dcd4-4c4f-40f6-bb5c-ec1b224c1580.lovableproject.com/analytics" />
       </Helmet>
 
-      <div className="px-4 py-4">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Financial Analytics</h1>
-          <p className="text-muted-foreground">Your financial journey, visualized.</p>
-        </div>
+      <div className="md:pl-64">
+        <div className="px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900">Financial Analytics</h1>
+            <p className="text-gray-600">Your financial journey, visualized.</p>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card className={`${netWorth >= 0 ? 'bg-green-600' : 'bg-red-600'} text-white`}>
@@ -391,8 +392,9 @@ export default function Analytics() {
                   )}
                 </TableBody>
               </Table>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface UserProfile {
   fullName: string;
@@ -105,9 +105,9 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .from('profiles')
           .select('*')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .single();
 
-        if (error) {
+        if (error && error.code !== 'PGRST116') {
           console.error('Error loading user data:', error);
           setLoading(false);
           return;

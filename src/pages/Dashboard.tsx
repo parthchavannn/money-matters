@@ -351,196 +351,226 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <Helmet>
-        <title>Dashboard – Money Matter</title>
-        <meta name="description" content="Your financial overview for the month" />
+        <title>Welcome back! – Money Matter</title>
+        <meta name="description" content="Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}" />
         <link rel="canonical" href="https://1778dcd4-4c4f-40f6-bb5c-ec1b224c1580.lovableproject.com/dashboard" />
       </Helmet>
       
-      <div className="px-4 py-4">
-        {/* Welcome Section - Mobile Optimized */}
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-            Welcome back! 👋
-          </h1>
-          <p className="text-muted-foreground text-sm md:text-base">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
-
-        {/* Daily Spendable - Hero Card */}
-        <div className="mb-6">
-          <div className="gradient-hero rounded-2xl p-5 md:p-8 text-primary-foreground relative overflow-hidden shadow-lg">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-            <div className="relative z-10">
-              <p className="text-sm md:text-base opacity-90 mb-1">Daily Spending Limit</p>
-              <div className="text-3xl md:text-4xl font-extrabold mb-2">
-                ₹{Math.round(dailySpendable).toLocaleString()}
-              </div>
-              <p className="text-xs md:text-sm opacity-80">
-                Safe to spend after bills & savings
-              </p>
-            </div>
+      <div className="md:pl-64">
+        <div className="px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center">
+              Welcome back! 
+              <span className="ml-2">👋</span>
+            </h1>
+            <p className="text-muted-foreground text-lg">Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
           </div>
-        </div>
 
-        {/* Quick Stats - Horizontal Scroll on Mobile */}
-        <div className="mb-6 -mx-4 px-4">
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide md:grid md:grid-cols-4 md:gap-4">
-            {/* Income */}
-            <div className="flex-shrink-0 w-[140px] md:w-auto mobile-card bg-success/10 border-success/20">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-success/20 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-success" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">Income</p>
-              <p className="text-lg font-bold text-foreground">₹{(monthlyIncome / 1000).toFixed(0)}k</p>
-            </div>
-
-            {/* Expenses */}
-            <div className="flex-shrink-0 w-[140px] md:w-auto mobile-card bg-warning/10 border-warning/20">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-warning/20 rounded-lg flex items-center justify-center">
-                  <span className="text-sm">💸</span>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">Expenses</p>
-              <p className="text-lg font-bold text-foreground">₹{(totalExpenses / 1000).toFixed(0)}k</p>
-            </div>
-
-            {/* Savings */}
-            <div className="flex-shrink-0 w-[140px] md:w-auto mobile-card bg-info/10 border-info/20">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-info/20 rounded-lg flex items-center justify-center">
-                  <span className="text-sm">💰</span>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">Saved</p>
-              <p className="text-lg font-bold text-foreground">₹{((totalSavings + totalInvestments) / 1000).toFixed(0)}k</p>
-            </div>
-
-            {/* Net Worth */}
-            <div className="flex-shrink-0 w-[140px] md:w-auto mobile-card bg-primary/10 border-primary/20">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-                  <span className="text-sm">💎</span>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mb-1">Net Worth</p>
-              <p className="text-lg font-bold text-foreground">₹{(netWorth / 1000).toFixed(0)}k</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Log Expense */}
-        <Card className="mb-6 border-border/50 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🔥</span>
-                <span className="font-semibold text-sm">Quick Log</span>
-              </div>
-              <span className="text-2xl font-bold text-warning">{streakDays}🔥</span>
-            </div>
-            <div className="flex gap-2">
-              <input 
-                type="number" 
-                placeholder="₹ Amount" 
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="flex-1 px-3 py-2.5 bg-muted border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <select 
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="px-3 py-2.5 bg-muted border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option>🍔 Food</option>
-                <option>🛒 Grocery</option>
-                <option>🚗 Transport</option>
-                <option>⚡ Bills</option>
-                <option>🛍️ Shopping</option>
-              </select>
-              <Button 
-                onClick={logExpense}
-                size="icon"
-                className="h-10 w-10 rounded-xl gradient-primary"
-              >
-                <span className="text-lg">+</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Budget Progress */}
-        <div className="mb-6">
-          <BudgetProgressCard
-            categories={budgetCategories}
-            format={format}
-            onViewDetails={(category) => navigate('/budgets', { state: { category } })}
-          />
-        </div>
-
-        {/* Bill Reminders */}
-        <div className="mb-6">
-          <BillRemindersCard reminders={billReminders} formatCurrency={format} />
-        </div>
-
-        {/* Active Goals - Cards */}
-        <Card className="mb-6 border-border/50 shadow-sm">
-          <CardHeader className="pb-2 px-4">
-            <CardTitle className="text-base flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <span>🎯</span>
-                <span>Active Goals</span>
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/goals')}
-                className="text-xs text-primary h-8"
-              >
-                View All
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4 space-y-3">
-            {goals.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-muted-foreground text-sm mb-3">No goals yet! Start your journey.</p>
-                <Button onClick={() => navigate('/goals')} size="sm" className="gradient-primary">
-                  Create Goal
-                </Button>
-              </div>
-            ) : (
-              goals.map((goal: any) => {
-                const progress = goal.target_amount > 0 ? (goal.current_amount / goal.target_amount) * 100 : 0;
-                
-                return (
-                  <div key={goal.id} className="p-3 bg-muted/50 rounded-xl">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-sm">{goal.title}</span>
-                      <span className="text-xs text-muted-foreground">{Math.round(progress)}%</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2 mb-1">
-                      <div 
-                        className="bg-primary h-2 rounded-full transition-all" 
-                        style={{ width: `${Math.min(progress, 100)}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{format(goal.current_amount)}</span>
-                      <span>{format(goal.target_amount)}</span>
-                    </div>
+          {/* Daily Spendable Guide Banner */}
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-purple-700 rounded-2xl p-8 text-white relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">Your Daily Spendable Guide</h2>
+                    <p className="text-blue-100 text-lg">A safe-to-spend amount for your daily wants, after all savings and needs.</p>
                   </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
+                  <div className="text-right">
+                    <div className="text-4xl font-bold">₹{Math.round(dailySpendable).toLocaleString()}</div>
+                    <div className="text-blue-200 text-lg">per day</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card className="bg-green-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <span className="text-green-100">Monthly Income</span>
+                  </div>
+                  <span className="text-sm bg-green-500 px-2 py-1 rounded">+12%</span>
+                </div>
+                <div className="text-3xl font-bold">₹{monthlyIncome.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-orange-500 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">⚠️</span>
+                  </div>
+                  <span className="text-orange-100">Fixed Expenses</span>
+                </div>
+                <div className="text-3xl font-bold">₹{totalExpenses.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-blue-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">💰</span>
+                  </div>
+                  <span className="text-blue-100">Total Savings</span>
+                </div>
+                <div className="text-3xl font-bold">₹{(totalSavings + totalInvestments).toLocaleString()}</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-purple-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                      <span className="text-lg">🎯</span>
+                    </div>
+                    <span className="text-purple-100">Available for Goals</span>
+                  </div>
+                  <span className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold">
+                    {goals.length}
+                  </span>
+                </div>
+                <div className="text-3xl font-bold">₹{Math.max(0, availableForGoals).toLocaleString()}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+
+          {/* Enhanced Budget Progress with drill-down */}
+          <div className="mb-8">
+            <BudgetProgressCard
+              categories={budgetCategories}
+              format={format}
+              onViewDetails={(category) => navigate('/budgets', { state: { category } })}
+            />
+          </div>
+
+          {/* Bill Reminders */}
+          <div className="mb-8">
+            <BillRemindersCard reminders={billReminders} formatCurrency={format} />
+          </div>
+
+          {/* Bottom Row - Goals and Quick Actions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Active Goals */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span className="flex items-center space-x-2">
+                    <span>🎯</span>
+                    <span>Active Goals</span>
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate('/goals')}
+                    className="text-xs"
+                  >
+                    View All
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {goals.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">No goals yet! Start by creating your first financial goal.</p>
+                    <Button onClick={() => navigate('/goals')}>
+                      Create Goal
+                    </Button>
+                  </div>
+                ) : (
+                  goals.map((goal: any) => {
+                    const progress = goal.target_amount > 0 ? (goal.current_amount / goal.target_amount) * 100 : 0;
+                    const priorityColor = goal.priority === 'high' ? 'text-destructive' : 
+                                        goal.priority === 'medium' ? 'text-amber-600' : 'text-green-600';
+                    
+                    return (
+                      <Card key={goal.id} className="p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium">{goal.title}</span>
+                          <span className={`text-sm ${priorityColor}`}>{goal.priority}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground mb-2">
+                          {format(goal.current_amount)} / {format(goal.target_amount)}
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2 mb-2">
+                          <div 
+                            className="bg-primary h-2 rounded-full" 
+                            style={{ width: `${Math.min(progress, 100)}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-sm text-muted-foreground">{Math.round(progress)}% complete</div>
+                      </Card>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Budget Tracker & Streak */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span className="flex items-center space-x-2">
+                    <span>🔥</span>
+                    <span>Budget Tracker & Streak</span>
+                  </span>
+                  <span className="text-2xl font-bold text-orange-600">{streakDays}</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">Log any expense to maintain your streak!</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm text-muted-foreground mb-1">Amount</label>
+                    <input 
+                      type="number" 
+                      placeholder="0" 
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-muted-foreground mb-1">Category</label>
+                    <select 
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option>🍔 Food & Dining</option>
+                      <option>🛒 Groceries</option>
+                      <option>🚗 Transport</option>
+                      <option>⚡ Utilities</option>
+                      <option>🛍️ Shopping</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={logExpense}
+                      className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+                    >
+                      + Log Expense
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+        </div>
       </div>
     </div>
   );
