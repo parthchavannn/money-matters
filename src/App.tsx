@@ -5,8 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { CurrencyProvider } from "./context/CurrencyContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { UserDataProvider, useUserData } from "./context/UserDataContext";
-import { useAuth } from "./hooks/useAuth";
 import { AuthForm } from "./components/auth/AuthForm";
 import MainLayout from "./layouts/MainLayout";
 import Index from "./pages/Index";
@@ -104,15 +104,17 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
-      <UserDataProvider>
-        <CurrencyProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <AppContent />
-          </TooltipProvider>
-        </CurrencyProvider>
-      </UserDataProvider>
+      <AuthProvider>
+        <UserDataProvider>
+          <CurrencyProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <AppContent />
+            </TooltipProvider>
+          </CurrencyProvider>
+        </UserDataProvider>
+      </AuthProvider>
     </HelmetProvider>
   </QueryClientProvider>
 );
