@@ -1,478 +1,175 @@
-import { Helmet } from "react-helmet-async";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRef, useState } from "react";
+import { Download, FileSpreadsheet, FlaskConical, Plus, ShieldCheck, Trash2, Upload, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Settings as SettingsIcon, User, Globe, DollarSign, Receipt, LogOut, Trash2 } from "lucide-react";
-import { useUserData } from "@/context/UserDataContext";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { PageHeader, SectionTitle } from "@/components/common";
+import { CURRENCIES } from "@/domain/meta";
+import type { ThemePref } from "@/domain/types";
+import { useFinance } from "@/store/FinanceContext";
+import { download, exportJSON, exportTransactionsCSV, parseImport } from "@/store/storage";
+import { todayISO } from "@/domain/dates";
+import { cn } from "@/lib/utils";
+
+type Confirm = null | "reset" | "sample" | { import: ReturnType<typeof parseImport> & { ok: true } };
 
 export default function Settings() {
-  const { userData, updateProfile, updateIncome, updateExpenses, resetUserData } = useUserData();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [isSaving, setIsSaving] = useState(false);
+  const { data, updateSettings, addCategory, removeCategory, replaceAll, loadSample, resetAll } = useFinance();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [confirm, setConfirm] = useState<Confirm>(null);
+  const [catName, setCatName] = useState("");
+  const [catEmoji, setCatEmoji] = useState("");
+  const [catType, setCatType] = useState<"expense" | "income">("expense");
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    
-    setIsSaving(true);
-    try {
-      // Save complete profile data to Supabase
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
-          full_name: userData.profile.fullName,
-          email: userData.profile.email,
-          age: userData.profile.age,
-          location: userData.profile.city,
-          employment_status: userData.profile.occupation,
-          monthly_income: userData.income.monthlyIncome,
-          monthly_expenses: JSON.parse(JSON.stringify(userData.expenses)),
-          currency_code: userData.profile.preferredCurrency === 'INR' ? 'INR' : userData.profile.preferredCurrency,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-      console.log('Profile saved successfully');
-    } catch (error) {
-      console.error('Error saving profile:', error);
-    } finally {
-      setIsSaving(false);
-    }
+  const onFile = async (file?: File) => {
+    if (!file) return;
+    const text = await file.text();
+    const res = parseImport(text);
+    if ("error" in res) return toast.error("Couldn't import", { description: res.error });
+    setConfirm({ import: res });
   };
 
-  const handleResetSetup = () => {
-    if (confirm('Are you sure you want to reset all your setup? This will take you back to the onboarding process.')) {
-      resetUserData();
-      navigate('/onboarding');
-    }
+  const addCat = () => {
+    const name = catName.trim();
+    if (!name) return;
+    if (!addCategory({ name, emoji: catEmoji.trim() || "🏷️", type: catType })) return toast.error("That category already exists.");
+    setCatName("");
+    setCatEmoji("");
   };
 
-  const handleLogout = () => {
-    if (confirm('Are you sure you want to logout?')) {
-      // In a real app, this would clear authentication tokens
-      console.log('Logging out...');
-    }
-  };
-
-  const handleDeleteAccount = () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      resetUserData();
-      navigate('/');
-    }
-  };
+  const counts = { t: data.transactions.length, a: data.accounts.length };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Settings – Money Matter</title>
-        <meta name="description" content="Manage your account and preferences" />
-        <link rel="canonical" href="https://1778dcd4-4c4f-40f6-bb5c-ec1b224c1580.lovableproject.com/settings" />
-      </Helmet>
+    <div className="mx-auto max-w-2xl space-y-8">
+      <PageHeader title="Settings" />
 
-      <div className="md:pl-64">
-        <div className="px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Settings</h1>
-              <p className="text-muted-foreground">Manage your account and preferences</p>
-            </div>
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={handleResetSetup}>
-                Reset Setup
-              </Button>
-              <Button onClick={handleSaveProfile} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
+      <section className="space-y-4">
+        <SectionTitle>Profile & display</SectionTitle>
+        <div className="grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="s-name" className="mb-1.5 block text-xs text-muted-foreground">Your name</Label>
+            <Input id="s-name" value={data.settings.name} onChange={(e) => updateSettings({ name: e.target.value })} placeholder="What should we call you?" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs text-muted-foreground">Currency</Label>
+            <Select value={data.settings.currency} onValueChange={(v) => updateSettings({ currency: v })}>
+              <SelectTrigger aria-label="Currency"><SelectValue /></SelectTrigger>
+              <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="mb-1.5 block text-xs text-muted-foreground">Theme</Label>
+            <div className="inline-flex rounded-lg bg-muted p-0.5">
+              {(["system", "light", "dark"] as ThemePref[]).map((t) => (
+                <button key={t} onClick={() => updateSettings({ theme: t })} aria-pressed={data.settings.theme === t} className={cn("rounded-md px-4 py-1.5 text-sm font-medium capitalize", data.settings.theme === t ? "bg-card shadow-sm" : "text-muted-foreground")}>
+                  {t}
+                </button>
+              ))}
             </div>
           </div>
-
-          <div className="space-y-6">
-            {/* Profile Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <User className="w-5 h-5 text-blue-600" />
-                  <span>Profile Information</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input 
-                      id="fullName" 
-                      value={userData.profile.fullName}
-                      onChange={(e) => updateProfile({ fullName: e.target.value })}
-                      placeholder="Parth Chavan"
-                      className="mt-1" 
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      value={userData.profile.email}
-                      onChange={(e) => updateProfile({ email: e.target.value })}
-                      placeholder="chavanparth1@gmail.com"
-                      className="mt-1" 
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="age">Age</Label>
-                    <Input 
-                      id="age" 
-                      type="number"
-                      value={userData.profile.age || ''}
-                      onChange={(e) => updateProfile({ age: Number(e.target.value) })}
-                      placeholder="23"
-                      className="mt-1" 
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="occupation">Occupation</Label>
-                    <Input 
-                      id="occupation" 
-                      value={userData.profile.occupation}
-                      onChange={(e) => updateProfile({ occupation: e.target.value })}
-                      placeholder="Software Engineer"
-                      className="mt-1" 
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Regional & Financial Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Globe className="w-5 h-5 text-green-600" />
-                  <span>Regional & Financial Settings</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="city">City</Label>
-                    <Input 
-                      id="city" 
-                      value={userData.profile.city}
-                      onChange={(e) => updateProfile({ city: e.target.value })}
-                      placeholder="Chiplun"
-                      className="mt-1" 
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cityTier">City Tier</Label>
-                    <Select 
-                      value={userData.profile.cityTier} 
-                      onValueChange={(value) => updateProfile({ cityTier: value as any })}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Tier 1">Tier 1 (Metro cities)</SelectItem>
-                        <SelectItem value="Tier 2">Tier 2 (Major cities)</SelectItem>
-                        <SelectItem value="Tier 3">Tier 3 (Smaller cities & towns)</SelectItem>
-                        <SelectItem value="Rural">Rural</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="preferredCurrency">Preferred Currency</Label>
-                    <Select 
-                      value={userData.profile.preferredCurrency} 
-                      onValueChange={(value) => updateProfile({ preferredCurrency: value })}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="INR">₹ Indian Rupee (INR)</SelectItem>
-                        <SelectItem value="USD">$ US Dollar (USD)</SelectItem>
-                        <SelectItem value="EUR">€ Euro (EUR)</SelectItem>
-                        <SelectItem value="AED">د.إ UAE Dirham (AED)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="financialMonthStart">Financial Month Start Day</Label>
-                    <Select 
-                      value={userData.profile.financialMonthStartDay.toString()} 
-                      onValueChange={(value) => updateProfile({ financialMonthStartDay: Number(value) })}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                          <SelectItem key={day} value={day.toString()}>
-                            {day}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Income & Savings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <DollarSign className="w-5 h-5 text-yellow-600" />
-                  <span>Income & Savings</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="monthlyIncome">Your Monthly Income</Label>
-                    <Input 
-                      id="monthlyIncome" 
-                      type="number"
-                      value={userData.income.monthlyIncome || ''}
-                      onChange={(e) => updateIncome({ monthlyIncome: Number(e.target.value) })}
-                      placeholder="70000"
-                      className="mt-1" 
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="familyIncome">Family Monthly Income (Optional)</Label>
-                    <Input 
-                      id="familyIncome" 
-                      type="number"
-                      value={userData.income.familyMonthlyIncome || ''}
-                      onChange={(e) => updateIncome({ familyMonthlyIncome: Number(e.target.value) })}
-                      placeholder="80000"
-                      className="mt-1" 
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="currentSavings">Current Savings</Label>
-                    <Input 
-                      id="currentSavings" 
-                      type="number"
-                      value={userData.income.currentSavings || ''}
-                      onChange={(e) => updateIncome({ currentSavings: Number(e.target.value) })}
-                      placeholder="150000"
-                      className="mt-1" 
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="currentInvestments">Current Investments</Label>
-                    <Input 
-                      id="currentInvestments" 
-                      type="number"
-                      value={userData.income.currentInvestments || ''}
-                      onChange={(e) => updateIncome({ currentInvestments: Number(e.target.value) })}
-                      placeholder="100000"
-                      className="mt-1" 
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Fixed Monthly Expenses */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Receipt className="w-5 h-5 text-red-600" />
-                  <span>Fixed Monthly Expenses</span>
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Estimate your recurring monthly expenses. These are used for budgeting and financial planning.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="rent">Rent</Label>
-                      <Input 
-                        id="rent" 
-                        type="number"
-                        value={userData.expenses.rent || ''}
-                        onChange={(e) => updateExpenses({ rent: Number(e.target.value) })}
-                        placeholder="0"
-                        className="mt-1" 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="transport">Transport</Label>
-                      <Input 
-                        id="transport" 
-                        type="number"
-                        value={userData.expenses.transport || ''}
-                        onChange={(e) => updateExpenses({ transport: Number(e.target.value) })}
-                        placeholder="0"
-                        className="mt-1" 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="insurance">Insurance</Label>
-                      <Input 
-                        id="insurance" 
-                        type="number"
-                        value={userData.expenses.insurance || ''}
-                        onChange={(e) => updateExpenses({ insurance: Number(e.target.value) })}
-                        placeholder="0"
-                        className="mt-1" 
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="groceries">Groceries</Label>
-                      <Input 
-                        id="groceries" 
-                        type="number"
-                        value={userData.expenses.groceries || ''}
-                        onChange={(e) => updateExpenses({ groceries: Number(e.target.value) })}
-                        placeholder="0"
-                        className="mt-1" 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="fuel">Fuel</Label>
-                      <Input 
-                        id="fuel" 
-                        type="number"
-                        value={userData.expenses.fuel || ''}
-                        onChange={(e) => updateExpenses({ fuel: Number(e.target.value) })}
-                        placeholder="0"
-                        className="mt-1" 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="subscriptions">Subscriptions</Label>
-                      <Input 
-                        id="subscriptions" 
-                        type="number"
-                        value={userData.expenses.subscriptions || ''}
-                        onChange={(e) => updateExpenses({ subscriptions: Number(e.target.value) })}
-                        placeholder="0"
-                        className="mt-1" 
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="utilities">Utilities</Label>
-                      <Input 
-                        id="utilities" 
-                        type="number"
-                        value={userData.expenses.utilities || ''}
-                        onChange={(e) => updateExpenses({ utilities: Number(e.target.value) })}
-                        placeholder="0"
-                        className="mt-1" 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="internetPhone">Internet Phone</Label>
-                      <Input 
-                        id="internetPhone" 
-                        type="number"
-                        value={userData.expenses.internetPhone || ''}
-                        onChange={(e) => updateExpenses({ internetPhone: Number(e.target.value) })}
-                        placeholder="0"
-                        className="mt-1" 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="domesticHelp">Domestic Help</Label>
-                      <Input 
-                        id="domesticHelp" 
-                        type="number"
-                        value={userData.expenses.domesticHelp || ''}
-                        onChange={(e) => updateExpenses({ domesticHelp: Number(e.target.value) })}
-                        placeholder="0"
-                        className="mt-1" 
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                  <div>
-                    <Label htmlFor="maintenance">Maintenance</Label>
-                    <Input 
-                      id="maintenance" 
-                      type="number"
-                      value={userData.expenses.maintenance || ''}
-                      onChange={(e) => updateExpenses({ maintenance: Number(e.target.value) })}
-                      placeholder="0"
-                      className="mt-1" 
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="other">Other</Label>
-                    <Input 
-                      id="other" 
-                      type="number"
-                      value={userData.expenses.other || ''}
-                      onChange={(e) => updateExpenses({ other: Number(e.target.value) })}
-                      placeholder="0"
-                      className="mt-1" 
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Account Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <SettingsIcon className="w-5 h-5 text-gray-600" />
-                  <span>Account Actions</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Logout</div>
-                    <div className="text-sm text-muted-foreground">Sign out of your account</div>
-                  </div>
-                  <Button variant="outline" onClick={handleLogout} className="text-red-600 border-red-200 hover:bg-red-50">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </Button>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-red-600">Delete Account</div>
-                    <div className="text-sm text-muted-foreground">Permanently delete your account and all data</div>
-                  </div>
-                  <Button variant="destructive" onClick={handleDeleteAccount}>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Account
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            Changing currency only changes how amounts are displayed — it doesn't convert anything you've entered.
+          </p>
         </div>
-      </div>
+      </section>
+
+      <section className="space-y-3">
+        <SectionTitle>Categories</SectionTitle>
+        <div className="rounded-xl border bg-card p-4">
+          {(["expense", "income"] as const).map((type) => (
+            <div key={type} className="mb-4">
+              <div className="mb-2 text-xs font-medium capitalize text-muted-foreground">{type}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {data.categories.filter((c) => c.type === type).map((c) => (
+                  <span key={c.name} className="group inline-flex items-center gap-1 rounded-full border bg-background py-1 pl-2.5 pr-1.5 text-sm">
+                    <span aria-hidden>{c.emoji}</span> {c.name}
+                    <button onClick={() => removeCategory(c.name)} aria-label={`Remove ${c.name}`} className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-destructive">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="flex flex-wrap gap-2 border-t pt-4">
+            <Input value={catEmoji} onChange={(e) => setCatEmoji(e.target.value)} placeholder="🏷️" maxLength={4} className="w-16 text-center" aria-label="Emoji" />
+            <Input value={catName} onChange={(e) => setCatName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addCat()} placeholder="New category" className="min-w-0 flex-1" aria-label="Category name" />
+            <Select value={catType} onValueChange={(v) => setCatType(v as "expense" | "income")}>
+              <SelectTrigger className="w-28" aria-label="Category type"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="expense">Expense</SelectItem><SelectItem value="income">Income</SelectItem></SelectContent>
+            </Select>
+            <Button onClick={addCat} disabled={!catName.trim()}><Plus className="mr-1 h-4 w-4" /> Add</Button>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">Removing a category keeps your past transactions as they are. It only stops being offered for new ones.</p>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <SectionTitle>Your data</SectionTitle>
+        <div className="space-y-3 rounded-xl border bg-card p-4">
+          <p className="flex items-start gap-2 text-sm text-muted-foreground">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+            Everything is stored privately in this browser — nothing is uploaded. That also means clearing site data erases it, so download a backup now and then.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => { download(`money-matter-backup-${todayISO()}.json`, exportJSON(data), "application/json"); toast.success("Backup downloaded"); }}>
+              <Download className="mr-1.5 h-4 w-4" /> Backup (JSON)
+            </Button>
+            <Button variant="outline" disabled={counts.t === 0} onClick={() => download(`transactions-${todayISO()}.csv`, exportTransactionsCSV(data), "text/csv")}>
+              <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Transactions (CSV)
+            </Button>
+            <Button variant="outline" onClick={() => fileRef.current?.click()}>
+              <Upload className="mr-1.5 h-4 w-4" /> Restore backup
+            </Button>
+            <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = ""; }} />
+          </div>
+          <p className="text-xs text-muted-foreground">{counts.a} accounts · {counts.t} transactions</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="ghost" size="sm" onClick={() => (counts.t || counts.a ? setConfirm("sample") : loadSample())}>
+            <FlaskConical className="mr-1.5 h-4 w-4" /> Load demo data
+          </Button>
+          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setConfirm("reset")}>
+            <Trash2 className="mr-1.5 h-4 w-4" /> Erase everything
+          </Button>
+        </div>
+      </section>
+
+      <AlertDialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirm === "reset" ? "Erase all data?" : confirm === "sample" ? "Replace your data with the demo?" : "Replace your data with this backup?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirm === "reset"
+                ? "All accounts, transactions, budgets and goals will be deleted from this browser. This can't be undone — download a backup first if unsure."
+                : confirm === "sample"
+                ? "Your current accounts and transactions will be replaced by made-up demo data. Download a backup first if you want to keep them."
+                : confirm && typeof confirm === "object"
+                ? `This backup has ${confirm.import.data.accounts.length} accounts and ${confirm.import.data.transactions.length} transactions. Your current data will be replaced.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={cn(confirm === "reset" && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
+              onClick={() => {
+                if (confirm === "reset") { resetAll(); toast("All data erased"); }
+                else if (confirm === "sample") { loadSample(); toast.success("Demo data loaded"); }
+                else if (confirm && typeof confirm === "object") { replaceAll(confirm.import.data); toast.success("Backup restored"); }
+                setConfirm(null);
+              }}
+            >
+              {confirm === "reset" ? "Erase everything" : "Replace"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
