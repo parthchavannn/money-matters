@@ -5,6 +5,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import AppShell from "@/components/AppShell";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { FinanceProvider, useFinance } from "@/store/FinanceContext";
+import { dataKeyFor } from "@/store/storage";
+import { AuthProvider, useAuth } from "@/cloud/AuthContext";
+import { CloudBoundary } from "@/cloud/CloudBoundary";
+import { createSupabaseStore } from "@/cloud/supabaseStore";
+import { supabase } from "@/lib/supabase";
+import AuthScreen, { SetNewPassword } from "@/pages/AuthScreen";
 import Home from "@/pages/Home";
 import Activity from "@/pages/Activity";
 import Plan from "@/pages/Plan";
@@ -84,15 +90,71 @@ function Toasts() {
   return <Toaster theme={data.settings.theme} position="top-center" richColors closeButton offset={12} />;
 }
 
+/** Everything that needs the user's data: toasts, routing, tooltips. */
+function AppBody() {
+  return (
+    <TooltipProvider>
+      <Toasts />
+      <Routed />
+    </TooltipProvider>
+  );
+}
+
+function Splash() {
+  return (
+    <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground" role="status">
+      Loading…
+    </div>
+  );
+}
+
+/**
+ * No backend configured → local-only, no login (great for trying it out).
+ * Backend configured    → must sign in; each user gets their own cache + server document.
+ */
+function Gate() {
+  const { enabled, loading, user, recovering } = useAuth();
+
+  if (!enabled) {
+    return (
+      <FinanceProvider>
+        <AppBody />
+      </FinanceProvider>
+    );
+  }
+  if (loading) return <Splash />;
+  if (recovering) {
+    return (
+      <>
+        <Toaster position="top-center" richColors />
+        <SetNewPassword />
+      </>
+    );
+  }
+  if (!user) {
+    return (
+      <>
+        <Toaster position="top-center" richColors />
+        <AuthScreen />
+      </>
+    );
+  }
+  // key = user id: switching accounts remounts everything, so data can never bleed across users.
+  return (
+    <FinanceProvider key={user.id} storageKey={dataKeyFor(user.id)}>
+      <CloudBoundary key={user.id} userId={user.id} store={createSupabaseStore(supabase!, user.id)}>
+        <AppBody />
+      </CloudBoundary>
+    </FinanceProvider>
+  );
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
-      <FinanceProvider>
-        <TooltipProvider>
-          <Toasts />
-          <Routed />
-        </TooltipProvider>
-      </FinanceProvider>
+      <AuthProvider>
+        <Gate />
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

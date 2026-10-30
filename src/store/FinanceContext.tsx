@@ -76,8 +76,11 @@ interface Finance {
 
 const Ctx = createContext<Finance | undefined>(undefined);
 
-export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const initial = useRef(loadData());
+export const FinanceProvider: React.FC<{ children: React.ReactNode; storageKey?: string }> = ({
+  children,
+  storageKey = STORAGE_KEY,
+}) => {
+  const initial = useRef(loadData(storageKey));
   const [data, setData] = useState<AppData>(initial.current.data);
   const writeFailed = useRef(false);
   const dataRef = useRef(data);
@@ -94,7 +97,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Persist on change.
   useEffect(() => {
-    const ok = saveData(data);
+    const ok = saveData(data, storageKey);
     if (!ok && !writeFailed.current) {
       writeFailed.current = true;
       toast.error("Couldn't save to this browser", {
@@ -103,16 +106,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
     }
     if (ok) writeFailed.current = false;
-  }, [data]);
+  }, [data, storageKey]);
 
   // Keep several open tabs in sync.
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) setData(loadData().data);
+      if (e.key === storageKey) setData(loadData(storageKey).data);
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [storageKey]);
 
   // Theme.
   useEffect(() => {
@@ -311,12 +314,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       replaceAll: (next) => setData(next),
       loadSample: () => setData((d) => buildSampleData(d.settings.name || "Alex", d.settings.currency)),
       resetAll: () => {
-        clearData();
+        clearData(storageKey);
         setData(emptyData());
       },
     };
     return api;
-  }, [update]);
+  }, [update, storageKey]);
 
   const value = useMemo<Finance>(
     () => ({ data, balances, fmt, fmtCompact, ...actions }),

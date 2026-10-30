@@ -13,6 +13,11 @@ import { useFinance } from "@/store/FinanceContext";
 import { download, exportJSON, exportTransactionsCSV, parseImport } from "@/store/storage";
 import { todayISO } from "@/domain/dates";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/cloud/AuthContext";
+import { useSync } from "@/cloud/syncContext";
+import { purgeUserCache } from "@/store/storage";
+import SyncBadge from "@/components/SyncBadge";
+import { LogOut } from "lucide-react";
 
 type Confirm = null | "reset" | "sample" | { import: ReturnType<typeof parseImport> & { ok: true } };
 
@@ -40,11 +45,65 @@ export default function Settings() {
     setCatEmoji("");
   };
 
+  const auth = useAuth();
+  const sync = useSync();
+  const [deleting, setDeleting] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const doSignOut = async () => {
+    if (!auth.user) return;
+    setBusy(true);
+    await sync.flush();
+    if (sync.hasUnsynced() && !window.confirm("Some recent changes haven't reached the server yet and will be lost if you sign out. Sign out anyway?")) {
+      setBusy(false);
+      return;
+    }
+    const id = auth.user.id;
+    await auth.signOut();
+    purgeUserCache(id);
+    setBusy(false);
+  };
+
+  const doDelete = async () => {
+    if (!auth.user) return;
+    setBusy(true);
+    const id = auth.user.id;
+    const r = await auth.deleteAccount();
+    setBusy(false);
+    if (r.error) return toast.error("Couldn't delete your account", { description: r.error });
+    purgeUserCache(id);
+    setDeleting(false);
+  };
+
   const counts = { t: data.transactions.length, a: data.accounts.length };
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <PageHeader title="Settings" />
+
+      {auth.enabled && auth.user && (
+        <section className="space-y-3">
+          <SectionTitle>Account</SectionTitle>
+          <div className="space-y-3 rounded-xl border bg-card p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-xs text-muted-foreground">Signed in as</div>
+                <div className="truncate text-sm font-medium">{auth.user.email}</div>
+              </div>
+              <SyncBadge />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" disabled={busy} onClick={doSignOut}>
+                <LogOut className="mr-1.5 h-4 w-4" /> Sign out
+              </Button>
+              <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={() => { setDeleteText(""); setDeleting(true); }}>
+                <Trash2 className="mr-1.5 h-4 w-4" /> Delete account &amp; data
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="space-y-4">
         <SectionTitle>Profile & display</SectionTitle>
@@ -112,7 +171,7 @@ export default function Settings() {
         <div className="space-y-3 rounded-xl border bg-card p-4">
           <p className="flex items-start gap-2 text-sm text-muted-foreground">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-            Everything is stored privately in this browser — nothing is uploaded. That also means clearing site data erases it, so download a backup now and then.
+            {auth.enabled ? "Your data is saved to your account and cached on this device, so it works offline and syncs everywhere you sign in. A backup is still handy before big changes." : "Everything is stored privately in this browser — nothing is uploaded. Clearing site data erases it, so download a backup now and then. (Set up a backend to enable accounts and sync — see the README.)"}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => { download(`money-matter-backup-${todayISO()}.json`, exportJSON(data), "application/json"); toast.success("Backup downloaded"); }}>
@@ -138,6 +197,28 @@ export default function Settings() {
         </div>
       </section>
 
+      <AlertDialog open={deleting} onOpenChange={(o) => !busy && setDeleting(o)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete your account and all data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes your login and everything stored for you on our servers and on this device. It can't be undone. Type DELETE to confirm.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input value={deleteText} onChange={(e) => setDeleteText(e.target.value)} placeholder="DELETE" aria-label="Type DELETE to confirm" />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteText !== "DELETE" || busy}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => { e.preventDefault(); void doDelete(); }}
+            >
+              Delete everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -146,7 +227,7 @@ export default function Settings() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirm === "reset"
-                ? "All accounts, transactions, budgets and goals will be deleted from this browser. This can't be undone — download a backup first if unsure."
+                ? "All accounts, transactions, budgets and goals will be deleted from this browser" + (auth.enabled ? " and from your account's synced copy (your login stays)" : "") + ". This can't be undone — download a backup first if unsure."
                 : confirm === "sample"
                 ? "Your current accounts and transactions will be replaced by made-up demo data. Download a backup first if you want to keep them."
                 : confirm && typeof confirm === "object"

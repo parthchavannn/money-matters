@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local environment (keys, per-developer config)
+.env
+.env.*
+!.env.example

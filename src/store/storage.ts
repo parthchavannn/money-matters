@@ -3,7 +3,6 @@ import { emptyData } from "@/domain/meta";
 import type { AppData } from "@/domain/types";
 
 const KEY = "money-matter:data";
-const CORRUPT_KEY = "money-matter:data:corrupt-backup";
 
 const iso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const kinds = ["bank", "savings", "cash", "wallet", "investment", "credit_card", "loan", "other"] as const;
@@ -72,10 +71,14 @@ export const appDataSchema = z.object({
 
 export type LoadResult = { data: AppData; recovered: boolean };
 
-export function loadData(): LoadResult {
+/** Device-cache key. Signed-in users get their own namespace so accounts never share a cache. */
+export const dataKeyFor = (userId: string) => `${KEY}:user:${userId}`;
+export const syncMetaKeyFor = (userId: string) => `money-matter:sync:${userId}`;
+
+export function loadData(key: string = KEY): LoadResult {
   let raw: string | null = null;
   try {
-    raw = localStorage.getItem(KEY);
+    raw = localStorage.getItem(key);
   } catch {
     return { data: emptyData(), recovered: false };
   }
@@ -88,7 +91,7 @@ export function loadData(): LoadResult {
   }
   // Never silently destroy someone's records: keep the unreadable copy aside.
   try {
-    localStorage.setItem(CORRUPT_KEY, raw);
+    localStorage.setItem(`${key}:corrupt-backup`, raw);
   } catch {
     /* storage full — nothing more we can do */
   }
@@ -96,24 +99,36 @@ export function loadData(): LoadResult {
 }
 
 /** Returns false when the browser refused the write (quota / private mode). */
-export function saveData(data: AppData): boolean {
+export function saveData(data: AppData, key: string = KEY): boolean {
   try {
-    localStorage.setItem(KEY, JSON.stringify(data));
+    localStorage.setItem(key, JSON.stringify(data));
     return true;
   } catch {
     return false;
   }
 }
 
-export function clearData() {
+export function clearData(key: string = KEY) {
   try {
-    localStorage.removeItem(KEY);
+    localStorage.removeItem(key);
   } catch {
     /* ignore */
   }
 }
 
 export const STORAGE_KEY = KEY;
+
+/** Remove everything cached on this device for a user (on sign-out / account deletion). */
+export function purgeUserCache(userId: string) {
+  try {
+    const k = dataKeyFor(userId);
+    localStorage.removeItem(k);
+    localStorage.removeItem(`${k}:corrupt-backup`);
+    localStorage.removeItem(syncMetaKeyFor(userId));
+  } catch {
+    /* ignore */
+  }
+}
 
 export function parseImport(text: string): { ok: true; data: AppData } | { ok: false; error: string } {
   let json: unknown;

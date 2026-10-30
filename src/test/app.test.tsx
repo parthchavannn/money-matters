@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "@/App";
 import { buildSampleData } from "@/store/sample";
 import { STORAGE_KEY } from "@/store/storage";
 import type { AppData } from "@/domain/types";
+
+// Local-only mode, regardless of any .env on the developer's machine.
+vi.mock("@/lib/supabase", () => ({ supabase: null, cloudEnabled: false }));
 
 const stored = (): AppData => JSON.parse(localStorage.getItem(STORAGE_KEY)!);
 const seed = (d: AppData) => localStorage.setItem(STORAGE_KEY, JSON.stringify(d));

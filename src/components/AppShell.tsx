@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { reviewDue } from "@/domain/calc";
 import { monthLabel } from "@/domain/dates";
 import { useFinance } from "@/store/FinanceContext";
+import SyncBadge from "@/components/SyncBadge";
 import { TransactionDialogProvider, useTransactionDialog } from "@/components/TransactionDialog";
 
 const NAV = [
@@ -66,6 +67,7 @@ function Sidebar() {
           </span>
         </Link>
       )}
+      <SyncBadge className="mb-2 px-3" />
       <NavLink
         to="/settings"
         className={({ isActive }) =>
@@ -87,11 +89,14 @@ function MobileChrome() {
     <>
       <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background/90 px-4 py-3 backdrop-blur md:hidden">
         <Logo />
+        <div className="flex items-center gap-1">
+        <SyncBadge compact />
         <Button asChild variant="ghost" size="icon" aria-label="Settings">
           <Link to="/settings">
             <Settings className="h-5 w-5" />
           </Link>
         </Button>
+        </div>
       </header>
 
       <button
